@@ -12,6 +12,7 @@ from flask import Blueprint, jsonify, request
 from ..config import config
 from ..models import TaskStatus, project_store, task_store
 from ..services import zep_entity_reader
+from ..services.graph_builder import ZepUnavailable
 from ..services.oasis_profile_generator import (
     generate_profiles,
     to_reddit_json,
@@ -39,6 +40,10 @@ def get_entities(graph_id: str):
     try:
         entities = zep_entity_reader.read_entities(graph_id)
         return jsonify({"entities": entities})
+    except ZepUnavailable as e:
+        # 未配置/未安装 Zep 属预期降级，返回空列表并附提示（不告警）
+        logger.info("Zep 不可用，返回空实体列表：%s", e)
+        return jsonify({"entities": [], "zep_available": False, "message": str(e)})
     except Exception as e:  # noqa: BLE001
         logger.warning("读取实体失败：%s", e)
         return jsonify({"entities": [], "error": str(e)})
@@ -47,7 +52,11 @@ def get_entities(graph_id: str):
 @simulation_bp.get("/entities/<graph_id>/<uuid>")
 def get_entity(graph_id: str, uuid: str):
     """获取单个实体详情。"""
-    detail = zep_entity_reader.get_entity_detail(graph_id, uuid)
+    try:
+        detail = zep_entity_reader.get_entity_detail(graph_id, uuid)
+    except ZepUnavailable as e:
+        logger.info("Zep 不可用：%s", e)
+        return jsonify({"zep_available": False, "message": str(e)})
     if not detail:
         return jsonify({"error": t("not_found")}), 404
     return jsonify(detail)
@@ -89,13 +98,15 @@ def prepare_simulation():
             graph_id = sim.get("graph_id")
             requirement = sim.get("requirement", "")
             # 1) 读取实体
-            entities = zep_entity_reader.read_entities(graph_id) if graph_id else []
+            entities = zep_entity_reader.read_entities(
+                graph_id) if graph_id else []
             task_store.update(task.id, progress=30)
             # 2) 生成 Profile（Reddit JSON + Twitter CSV）
             profiles = generate_profiles(entities, graph_id=graph_id)
             work_dir = simulation_manager.work_dir(sim_id)
             with open(os.path.join(work_dir, "profiles_reddit.json"), "w", encoding="utf-8") as f:
-                json.dump(to_reddit_json(profiles), f, ensure_ascii=False, indent=2)
+                json.dump(to_reddit_json(profiles), f,
+                          ensure_ascii=False, indent=2)
             with open(os.path.join(work_dir, "profiles_twitter.csv"), "w", encoding="utf-8") as f:
                 f.write(to_twitter_csv(profiles))
             task_store.update(task.id, progress=70)
@@ -141,7 +152,8 @@ def start_simulation():
     if not simulation_manager.get(sim_id):
         return jsonify({"error": t("not_found")}), 404
     try:
-        sim = simulation_manager.start(sim_id, mode=mode, max_rounds=max_rounds)
+        sim = simulation_manager.start(
+            sim_id, mode=mode, max_rounds=max_rounds)
         return jsonify({"simulation": sim})
     except Exception as e:  # noqa: BLE001
         logger.error("启动模拟失败：%s", e)
@@ -181,7 +193,8 @@ def interview():
     if not sim_id:
         return jsonify({"error": t("bad_request")}), 400
     req_id = write_interview_request(sim_id, agent_id, question)
-    resp = read_interview_response(sim_id, req_id, timeout=float(body.get("timeout", 20)))
+    resp = read_interview_response(
+        sim_id, req_id, timeout=float(body.get("timeout", 20)))
     return jsonify({"answer": (resp or {}).get("answer", ""), "request_id": req_id})
 
 
@@ -198,6 +211,8 @@ def interview_batch():
     results = []
     for agent_id in agent_ids:
         req_id = write_interview_request(sim_id, agent_id, question)
-        resp = read_interview_response(sim_id, req_id, timeout=float(body.get("timeout", 20)))
-        results.append({"agent_id": agent_id, "answer": (resp or {}).get("answer", "")})
+        resp = read_interview_response(
+            sim_id, req_id, timeout=float(body.get("timeout", 20)))
+        results.append(
+            {"agent_id": agent_id, "answer": (resp or {}).get("answer", "")})
     return jsonify({"results": results})

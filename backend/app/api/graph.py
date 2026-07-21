@@ -88,7 +88,8 @@ def ontology_generate():
             text = parse_file(file_path)
             task_store.update(task.id, progress=40)
             ontology = generate_ontology(text, requirement)
-            project_store.update(project.id, ontology=ontology, status="ontology_ready")
+            project_store.update(
+                project.id, ontology=ontology, status="ontology_ready")
             task_store.update(
                 task.id, status=TaskStatus.COMPLETED, progress=100, result=ontology
             )
@@ -126,8 +127,10 @@ def build():
             def on_progress(p):
                 task_store.update(task.id, progress=p)
 
-            graph_id = graph_builder.build_graph(project, text, on_progress=on_progress)
-            project_store.update(project_id, graph_id=graph_id, status="graph_ready")
+            graph_id = graph_builder.build_graph(
+                project, text, on_progress=on_progress)
+            project_store.update(
+                project_id, graph_id=graph_id, status="graph_ready")
             task_store.update(task.id, status=TaskStatus.COMPLETED, progress=100,
                               result={"graph_id": graph_id})
         except Exception as e:  # noqa: BLE001
@@ -144,7 +147,8 @@ def build_status():
     """查询图谱构建（或本体生成）进度。"""
     body = request.get_json(silent=True) or {}
     project_id = body.get("project_id")
-    task_id = body.get("task_id") or _build_tasks.get(project_id) or _ontology_tasks.get(project_id)
+    task_id = body.get("task_id") or _build_tasks.get(
+        project_id) or _ontology_tasks.get(project_id)
     task = task_store.get(task_id) if task_id else None
     project = project_store.get(project_id)
     return jsonify(
@@ -165,6 +169,13 @@ def graph_data(graph_id: str):
     try:
         data = graph_builder.get_graph_data(graph_id)
         return jsonify(data)
+    except graph_builder.ZepUnavailable as e:
+        # 未配置/未安装 Zep 属预期降级，返回空图谱（不告警）
+        logger.info("Zep 不可用，返回空图谱：%s", e)
+        return jsonify(
+            {"graph_id": graph_id, "nodes": [], "edges": [],
+                "zep_available": False, "message": str(e)}
+        )
     except Exception as e:  # noqa: BLE001
         logger.warning("读取图谱数据失败：%s", e)
         # 优雅降级：返回空图谱，避免前端崩溃

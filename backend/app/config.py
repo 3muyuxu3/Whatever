@@ -61,24 +61,35 @@ class Config:
         os.makedirs(cls.UPLOAD_DIR, exist_ok=True)
         os.makedirs(cls.DATA_DIR, exist_ok=True)
 
+    @staticmethod
+    def _is_set(value) -> bool:
+        """判断配置值是否有效（非空且非 .env.example 中的占位符）。"""
+        if not value:
+            return False
+        v = str(value).strip().lower()
+        if not v:
+            return False
+        # 过滤常见占位符，如 your_api_key_here / your_zep_api_key_here / your_base_url_here
+        return not (v.startswith("your_") or v.endswith("_here"))
+
     @classmethod
     def has_llm(cls) -> bool:
         """是否已配置主 LLM。"""
-        return bool(cls.LLM_API_KEY)
+        return cls._is_set(cls.LLM_API_KEY)
 
     @classmethod
     def has_boost_llm(cls) -> bool:
         """是否已配置加速 LLM（三项齐全才算启用）。"""
-        return bool(
-            cls.LLM_BOOST_API_KEY
-            and cls.LLM_BOOST_BASE_URL
-            and cls.LLM_BOOST_MODEL_NAME
+        return (
+            cls._is_set(cls.LLM_BOOST_API_KEY)
+            and cls._is_set(cls.LLM_BOOST_BASE_URL)
+            and cls._is_set(cls.LLM_BOOST_MODEL_NAME)
         )
 
     @classmethod
     def has_zep(cls) -> bool:
         """是否已配置 Zep Cloud。"""
-        return bool(cls.ZEP_API_KEY)
+        return cls._is_set(cls.ZEP_API_KEY)
 
 
 # 全局单例

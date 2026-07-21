@@ -15,12 +15,23 @@ logger = get_logger("graph_builder")
 BATCH_SIZE = 3
 
 
-def _get_zep():
-    """惰性创建 Zep 客户端。"""
-    if not config.has_zep():
-        raise RuntimeError("Zep 未配置（缺少 ZEP_API_KEY）")
-    from zep_cloud.client import Zep  # 惰性导入，避免无依赖时无法启动
+class ZepUnavailable(RuntimeError):
+    """Zep 不可用：未配置 ZEP_API_KEY，或未安装 zep-cloud 依赖。
 
+    这是一种预期内的降级情形（而非意外错误），供上层优雅处理。
+    """
+
+
+def _get_zep():
+    """惰性创建 Zep 客户端；未配置/未安装时抛出 ZepUnavailable。"""
+    if not config.has_zep():
+        raise ZepUnavailable("未配置 ZEP_API_KEY（Zep 记忆图谱未启用）")
+    try:
+        from zep_cloud.client import Zep  # 惰性导入，避免无依赖时无法启动
+    except ModuleNotFoundError as e:
+        raise ZepUnavailable(
+            "未安装 zep-cloud 依赖，请在 backend 目录执行 `uv sync` 安装完整依赖后重试"
+        ) from e
     return Zep(api_key=config.ZEP_API_KEY)
 
 
@@ -83,7 +94,7 @@ def build_graph(project, text: str, on_progress=None) -> str:
     chunks = chunk_text(text)
     total = max(1, len(chunks))
     for i in range(0, len(chunks), BATCH_SIZE):
-        for chunk in chunks[i : i + BATCH_SIZE]:
+        for chunk in chunks[i: i + BATCH_SIZE]:
             _add_text(zep, graph_id, chunk)
         done = min(i + BATCH_SIZE, total)
         if on_progress:
@@ -131,13 +142,15 @@ def get_graph_data(graph_id: str) -> dict:
     from ..utils.zep_paging import paginate
 
     def fetch_nodes(cursor, size):
-        res = zep.graph.node.get_by_graph_id(graph_id, limit=size, uuid_cursor=cursor)
+        res = zep.graph.node.get_by_graph_id(
+            graph_id, limit=size, uuid_cursor=cursor)
         items = _as_list(res)
         next_cursor = items[-1].uuid if items and len(items) == size else None
         return items, next_cursor
 
     def fetch_edges(cursor, size):
-        res = zep.graph.edge.get_by_graph_id(graph_id, limit=size, uuid_cursor=cursor)
+        res = zep.graph.edge.get_by_graph_id(
+            graph_id, limit=size, uuid_cursor=cursor)
         items = _as_list(res)
         next_cursor = items[-1].uuid if items and len(items) == size else None
         return items, next_cursor
