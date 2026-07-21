@@ -74,3 +74,32 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+
+/* ===== 首页人群深度「行走」动画（参考 MiroFish） ===== */
+/* 人物从一侧走到另一侧并循环；配合景深（近处清晰、远处模糊）营造人群纵深感 */
+@keyframes peep-walk-right {
+  from {
+    transform: translate3d(-18vw, -50%, 0);
+  }
+
+  to {
+    transform: translate3d(118vw, -50%, 0);
+  }
+}
+
+@keyframes peep-walk-left {
+  from {
+    transform: translate3d(118vw, -50%, 0);
+  }
+
+  to {
+    transform: translate3d(-18vw, -50%, 0);
+  }
+}
+
+/* 尊重用户“减少动画”偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .peeps-crowd * {
+    animation: none !important;
+  }
+}

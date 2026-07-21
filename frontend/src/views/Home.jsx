@@ -5,6 +5,7 @@ import FadeIn from '../components/FadeIn'
 import AnimatedHeading from '../components/AnimatedHeading'
 import LanguageSwitcher from '../components/LanguageSwitcher'
 import HistoryDatabase from '../components/HistoryDatabase'
+import PeepsCrowd from '../components/PeepsCrowd'
 import { useUpload } from '../store/UploadContext'
 import { generateOntology } from '../api/graph'
 
@@ -84,6 +85,9 @@ export default function Home() {
                     preload="auto"
                 />
 
+                {/* 底部行走的人群（下滑时淡出消失） */}
+                <PeepsCrowd />
+
                 {/* 前景内容：导航栏 + Hero 文案，位于视频之上 */}
                 <div className="relative z-10 flex h-full flex-col">
                     {/* ---- 导航栏 ---- */}
@@ -161,7 +165,7 @@ export default function Home() {
                     </div>
 
                     {/* ---- Hero 文案（贴视口底部） ---- */}
-                    <div className="flex flex-1 flex-col justify-end px-6 pb-12 md:px-12 lg:px-16 lg:pb-16">
+                    <div className="flex flex-1 flex-col justify-end px-6 pb-[40vh] md:px-12 lg:px-16">
                         <div className="lg:grid lg:grid-cols-2 lg:items-end">
                             {/* 左列：主标题 + 副标题 + 按钮 */}
                             <div>
