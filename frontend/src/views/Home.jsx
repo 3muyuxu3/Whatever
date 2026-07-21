@@ -92,7 +92,7 @@ export default function Home() {
                 <div className="relative z-10 flex h-full flex-col">
                     {/* ---- 导航栏 ---- */}
                     <div className="px-6 pt-6 md:px-12 lg:px-16">
-                        <nav className="liquid-glass flex items-center justify-between rounded-xl px-4 py-2">
+                        <nav className="liquid-glass flex items-center justify-between overflow-visible rounded-xl px-4 py-2">
                             {/* 左：Logo */}
                             <button
                                 type="button"
