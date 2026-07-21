@@ -1,0 +1,105 @@
+{
+    "brand": {
+        "name": "SimulMirror",
+        "slogan": "Simula la realidad, refleja el futuro"
+    },
+    "nav": {
+        "vision": "Visión",
+        "capabilities": "Capacidades",
+        "workflow": "Flujo",
+        "docs": "Docs",
+        "start": "Empezar a predecir"
+    },
+    "hero": {
+        "heading": "Simula la realidad,\nrefleja el futuro.",
+        "subheading": "SimulMirror extrae semillas del mundo real para construir mundos digitales paralelos de alta fidelidad, donde miles de agentes con personalidad propia y memoria a largo plazo evolucionan por sí mismos.",
+        "start": "Empezar a predecir",
+        "explore": "Explorar ahora",
+        "tag": "Simular · Reflejar · Predecir"
+    },
+    "capabilities": {
+        "title": "Un motor de predicción de cinco etapas",
+        "subtitle": "De una sola semilla del mundo real a un mundo digital interactivo",
+        "graph": {
+            "title": "Grafo de conocimiento",
+            "desc": "Extrae automáticamente entidades y relaciones de los documentos y construye un grafo de alta fidelidad en Zep Cloud."
+        },
+        "env": {
+            "title": "Configuración del entorno",
+            "desc": "Genera perfiles de agentes con personalidad, memoria y lógica de comportamiento para cada entidad."
+        },
+        "simulation": {
+            "title": "Simulación de masas",
+            "desc": "Simulación paralela en Twitter y Reddit, donde miles de agentes interactúan y evolucionan."
+        },
+        "report": {
+            "title": "Generación de informes",
+            "desc": "Un agente de informes ReACT recupera y reflexiona de forma autónoma para producir un informe de predicción detallado."
+        },
+        "interaction": {
+            "title": "Interacción profunda",
+            "desc": "Inyecta variables desde una vista divina y conversa con el informe o cualquier agente para dirigir el futuro."
+        }
+    },
+    "workflow": {
+        "title": "Predice el futuro en cuatro pasos",
+        "step1": {
+            "title": "Sube una semilla",
+            "desc": "Sube noticias, borradores de políticas, señales financieras o relatos, y describe qué quieres predecir."
+        },
+        "step2": {
+            "title": "Construcción automática del mundo",
+            "desc": "El sistema genera la ontología, el grafo y los agentes automáticamente, sin ajustes manuales."
+        },
+        "step3": {
+            "title": "Ejecuta la simulación",
+            "desc": "Ejecuta simulaciones de inteligencia colectiva en un proceso aislado y monitoriza la evolución social en tiempo real."
+        },
+        "step4": {
+            "title": "Obtén el informe",
+            "desc": "Recibe un mundo digital interactivo y un informe de predicción detallado en Markdown."
+        }
+    },
+    "start": {
+        "title": "Sube tu semilla",
+        "subtitle": "Compatible con PDF / TXT / MD. Describe tu objetivo de predicción y SimulMirror hace el resto.",
+        "dropHint": "Haz clic o arrastra un archivo aquí",
+        "fileTypes": "PDF, TXT, MD — hasta 50MB por archivo",
+        "requirementLabel": "Objetivo de predicción",
+        "requirementPlaceholder": "Describe en una frase lo que quieres predecir, p. ej., cómo evoluciona la opinión pública tras anunciarse esta política.",
+        "button": "Construir el mundo",
+        "building": "Construyendo…",
+        "selectedFile": "Archivo seleccionado"
+    },
+    "history": {
+        "title": "Proyectos recientes",
+        "subtitle": "Sigue explorando los mundos que has construido",
+        "empty": "Aún no hay proyectos: construye tu primer mundo digital.",
+        "open": "Abrir",
+        "delete": "Eliminar"
+    },
+    "footer": {
+        "tagline": "Simula la realidad, refleja el futuro",
+        "rights": "SimulMirror. Todos los derechos reservados.",
+        "github": "GitHub"
+    },
+    "common": {
+        "loading": "Cargando…",
+        "error": "Algo salió mal",
+        "back": "Atrás",
+        "next": "Siguiente",
+        "retry": "Reintentar",
+        "cancel": "Cancelar",
+        "confirm": "Confirmar",
+        "notFound": "Página no encontrada",
+        "backHome": "Volver al inicio"
+    },
+    "steps": {
+        "step1": "Construcción del grafo",
+        "step2": "Configuración del entorno",
+        "step3": "Simulación",
+        "step4": "Informe",
+        "step5": "Interacción"
+    },
+    "language": "Idioma"
+}

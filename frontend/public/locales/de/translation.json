@@ -1,0 +1,105 @@
+{
+    "brand": {
+        "name": "SimulMirror",
+        "slogan": "Simuliere die Realität, spiegle die Zukunft"
+    },
+    "nav": {
+        "vision": "Vision",
+        "capabilities": "Fähigkeiten",
+        "workflow": "Ablauf",
+        "docs": "Docs",
+        "start": "Vorhersage starten"
+    },
+    "hero": {
+        "heading": "Simuliere die Realität,\nspiegle die Zukunft.",
+        "subheading": "SimulMirror extrahiert Samen aus der realen Welt, um hochpräzise parallele digitale Welten zu erschaffen, in denen Tausende Agenten mit eigener Persönlichkeit und Langzeitgedächtnis selbstständig evolvieren.",
+        "start": "Vorhersage starten",
+        "explore": "Mehr erfahren",
+        "tag": "Simulieren · Spiegeln · Vorhersagen"
+    },
+    "capabilities": {
+        "title": "Eine fünfstufige Vorhersage-Engine",
+        "subtitle": "Von einem einzigen Samen der Realität zu einer interaktiven digitalen Welt",
+        "graph": {
+            "title": "Wissensgraph",
+            "desc": "Extrahiert automatisch Entitäten und Beziehungen aus Dokumenten und baut einen hochpräzisen Graphen in Zep Cloud."
+        },
+        "env": {
+            "title": "Umgebungsaufbau",
+            "desc": "Erzeugt Agentenprofile mit Persönlichkeit, Gedächtnis und Verhaltenslogik für jede Entität."
+        },
+        "simulation": {
+            "title": "Massensimulation",
+            "desc": "Parallele Simulation auf Twitter und Reddit, in der Tausende Agenten interagieren und sich entwickeln."
+        },
+        "report": {
+            "title": "Berichterstellung",
+            "desc": "Ein ReACT-Berichtsagent recherchiert und reflektiert eigenständig und erstellt einen detaillierten Vorhersagebericht."
+        },
+        "interaction": {
+            "title": "Tiefe Interaktion",
+            "desc": "Injiziere Variablen aus der Vogelperspektive und sprich mit dem Bericht oder jedem Agenten, um die Zukunft zu lenken."
+        }
+    },
+    "workflow": {
+        "title": "Sag die Zukunft in vier Schritten voraus",
+        "step1": {
+            "title": "Samen hochladen",
+            "desc": "Lade Nachrichten, Gesetzentwürfe, Finanzsignale oder Geschichten hoch und beschreibe, was du vorhersagen möchtest."
+        },
+        "step2": {
+            "title": "Welt automatisch aufbauen",
+            "desc": "Das System erzeugt Ontologie, Graph und Agenten automatisch – ohne manuelle Einstellungen."
+        },
+        "step3": {
+            "title": "Simulation ausführen",
+            "desc": "Führe Schwarmintelligenz-Simulationen in einem isolierten Prozess aus und beobachte die soziale Entwicklung in Echtzeit."
+        },
+        "step4": {
+            "title": "Bericht erhalten",
+            "desc": "Erhalte eine interaktive digitale Welt und einen detaillierten Vorhersagebericht in Markdown."
+        }
+    },
+    "start": {
+        "title": "Lade deinen Samen hoch",
+        "subtitle": "PDF / TXT / MD werden unterstützt. Beschreibe dein Vorhersageziel und SimulMirror erledigt den Rest.",
+        "dropHint": "Klicke oder ziehe eine Datei hierher",
+        "fileTypes": "PDF, TXT, MD – bis zu 50 MB pro Datei",
+        "requirementLabel": "Vorhersageziel",
+        "requirementPlaceholder": "Beschreibe in einem Satz, was du vorhersagen möchtest, z. B. wie sich die öffentliche Meinung nach Ankündigung dieser Politik entwickelt.",
+        "button": "Welt aufbauen",
+        "building": "Wird aufgebaut…",
+        "selectedFile": "Ausgewählte Datei"
+    },
+    "history": {
+        "title": "Aktuelle Projekte",
+        "subtitle": "Erkunde weiter die von dir erstellten Welten",
+        "empty": "Noch keine Projekte – erstelle deine erste digitale Welt.",
+        "open": "Öffnen",
+        "delete": "Löschen"
+    },
+    "footer": {
+        "tagline": "Simuliere die Realität, spiegle die Zukunft",
+        "rights": "SimulMirror. Alle Rechte vorbehalten.",
+        "github": "GitHub"
+    },
+    "common": {
+        "loading": "Wird geladen…",
+        "error": "Etwas ist schiefgelaufen",
+        "back": "Zurück",
+        "next": "Weiter",
+        "retry": "Erneut versuchen",
+        "cancel": "Abbrechen",
+        "confirm": "Bestätigen",
+        "notFound": "Seite nicht gefunden",
+        "backHome": "Zur Startseite"
+    },
+    "steps": {
+        "step1": "Graph-Aufbau",
+        "step2": "Umgebungsaufbau",
+        "step3": "Simulation",
+        "step4": "Bericht",
+        "step5": "Interaktion"
+    },
+    "language": "Sprache"
+}

@@ -1,0 +1,105 @@
+{
+    "brand": {
+        "name": "SimulMirror",
+        "slogan": "Simulate Reality, Mirror the Future"
+    },
+    "nav": {
+        "vision": "Vision",
+        "capabilities": "Capabilities",
+        "workflow": "Workflow",
+        "docs": "Docs",
+        "start": "Start Predicting"
+    },
+    "hero": {
+        "heading": "Simulate reality,\nmirror the future.",
+        "subheading": "SimulMirror extracts seeds from the real world to build high-fidelity parallel digital worlds, where thousands of agents with distinct personas and long-term memory evolve on their own.",
+        "start": "Start Predicting",
+        "explore": "Explore Now",
+        "tag": "Simulate · Mirror · Predict"
+    },
+    "capabilities": {
+        "title": "A Five-Stage Prediction Engine",
+        "subtitle": "From a single real-world seed to an interactive digital world",
+        "graph": {
+            "title": "Knowledge Graph",
+            "desc": "Automatically extract entities and relations from documents and build a high-fidelity graph in Zep Cloud."
+        },
+        "env": {
+            "title": "Environment Setup",
+            "desc": "Generate agent personas with personality, memory and behavioral logic for every entity."
+        },
+        "simulation": {
+            "title": "Crowd Simulation",
+            "desc": "Parallel simulation across Twitter and Reddit, where thousands of agents interact and evolve."
+        },
+        "report": {
+            "title": "Report Generation",
+            "desc": "A ReACT report agent retrieves and reflects autonomously to produce a detailed prediction report."
+        },
+        "interaction": {
+            "title": "Deep Interaction",
+            "desc": "Inject variables from a god's-eye view and chat with the report or any agent to steer the future."
+        }
+    },
+    "workflow": {
+        "title": "Predict the Future in Four Steps",
+        "step1": {
+            "title": "Upload a Seed",
+            "desc": "Upload news, policy drafts, financial signals or stories, then describe what you want to predict."
+        },
+        "step2": {
+            "title": "Auto-Build the World",
+            "desc": "The system generates the ontology, graph and agents automatically — no manual settings required."
+        },
+        "step3": {
+            "title": "Run the Simulation",
+            "desc": "Run crowd-intelligence simulations in an isolated process and monitor social evolution in real time."
+        },
+        "step4": {
+            "title": "Get the Report",
+            "desc": "Receive an interactive digital world and a detailed Markdown prediction report."
+        }
+    },
+    "start": {
+        "title": "Upload Your Seed",
+        "subtitle": "PDF / TXT / MD supported. Describe your prediction goal and SimulMirror handles the rest.",
+        "dropHint": "Click or drag a file here",
+        "fileTypes": "PDF, TXT, MD supported — up to 50MB per file",
+        "requirementLabel": "Prediction goal",
+        "requirementPlaceholder": "Describe what you want to predict in one sentence, e.g. how public opinion evolves after this policy is announced.",
+        "button": "Build the World",
+        "building": "Building…",
+        "selectedFile": "Selected file"
+    },
+    "history": {
+        "title": "Recent Projects",
+        "subtitle": "Continue exploring the worlds you have built",
+        "empty": "No projects yet — build your first digital world.",
+        "open": "Open",
+        "delete": "Delete"
+    },
+    "footer": {
+        "tagline": "Simulate Reality, Mirror the Future",
+        "rights": "SimulMirror. All rights reserved.",
+        "github": "GitHub"
+    },
+    "common": {
+        "loading": "Loading…",
+        "error": "Something went wrong",
+        "back": "Back",
+        "next": "Next",
+        "retry": "Retry",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "notFound": "Page not found",
+        "backHome": "Back to home"
+    },
+    "steps": {
+        "step1": "Graph Building",
+        "step2": "Environment Setup",
+        "step3": "Simulation",
+        "step4": "Report",
+        "step5": "Interaction"
+    },
+    "language": "Language"
+}

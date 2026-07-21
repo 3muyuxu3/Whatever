@@ -1,0 +1,105 @@
+{
+    "brand": {
+        "name": "SimulMirror",
+        "slogan": "模拟镜像，推演未来"
+    },
+    "nav": {
+        "vision": "理念",
+        "capabilities": "能力",
+        "workflow": "流程",
+        "docs": "文档",
+        "start": "开始推演"
+    },
+    "hero": {
+        "heading": "模拟镜像，\n推演未来。",
+        "subheading": "SimulMirror 提取现实世界的种子信息，构建高保真的平行数字世界，让千万个拥有独立人格与长期记忆的智能体自由演化。",
+        "start": "开始推演",
+        "explore": "了解更多",
+        "tag": "模拟 · 镜像 · 推演"
+    },
+    "capabilities": {
+        "title": "五阶段智能预测引擎",
+        "subtitle": "从一颗现实的种子，生长为可深度交互的数字世界",
+        "graph": {
+            "title": "知识图谱构建",
+            "desc": "从文档中自动提取实体与关系，在 Zep Cloud 中构建高保真知识图谱。"
+        },
+        "env": {
+            "title": "环境搭建",
+            "desc": "为每个实体生成具备人格、记忆与行为逻辑的智能体人设。"
+        },
+        "simulation": {
+            "title": "群体模拟",
+            "desc": "Twitter 与 Reddit 双平台并行模拟，千万智能体自由交互与社会演化。"
+        },
+        "report": {
+            "title": "报告生成",
+            "desc": "ReACT 报告智能体自主检索、反思，产出详尽的预测分析报告。"
+        },
+        "interaction": {
+            "title": "深度互动",
+            "desc": "以上帝视角注入变量，与报告或任意智能体对话，精准推演未来走向。"
+        }
+    },
+    "workflow": {
+        "title": "四步，推演未来",
+        "step1": {
+            "title": "上传种子信息",
+            "desc": "上传新闻、政策、金融信号或小说等文档，并描述预测需求。"
+        },
+        "step2": {
+            "title": "自动构建世界",
+            "desc": "系统自动生成本体、图谱与智能体，无需人工设置任何参数。"
+        },
+        "step3": {
+            "title": "运行模拟推演",
+            "desc": "在独立进程中运行群体智能模拟，实时监控社会演化动态。"
+        },
+        "step4": {
+            "title": "获取预测报告",
+            "desc": "生成可交互的数字世界与详尽的 Markdown 预测报告。"
+        }
+    },
+    "start": {
+        "title": "上传你的种子信息",
+        "subtitle": "支持 PDF / TXT / MD 文档。描述你的预测需求，SimulMirror 将自动完成余下工作。",
+        "dropHint": "点击或将文件拖拽到此处",
+        "fileTypes": "支持 PDF、TXT、MD，单个文件最大 50MB",
+        "requirementLabel": "预测需求",
+        "requirementPlaceholder": "用一句话描述你想预测的问题，例如：这项新政策发布后，公众舆论将如何演变？",
+        "button": "开始构建世界",
+        "building": "正在构建……",
+        "selectedFile": "已选择文件"
+    },
+    "history": {
+        "title": "历史项目",
+        "subtitle": "继续探索你此前构建的数字世界",
+        "empty": "暂无历史项目，快来构建你的第一个数字世界吧。",
+        "open": "打开",
+        "delete": "删除"
+    },
+    "footer": {
+        "tagline": "模拟镜像，推演未来",
+        "rights": "SimulMirror. 保留所有权利。",
+        "github": "GitHub"
+    },
+    "common": {
+        "loading": "加载中……",
+        "error": "出错了",
+        "back": "返回",
+        "next": "下一步",
+        "retry": "重试",
+        "cancel": "取消",
+        "confirm": "确认",
+        "notFound": "页面未找到",
+        "backHome": "返回首页"
+    },
+    "steps": {
+        "step1": "图谱构建",
+        "step2": "环境搭建",
+        "step3": "模拟运行",
+        "step4": "报告生成",
+        "step5": "深度互动"
+    },
+    "language": "语言"
+}

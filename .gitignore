@@ -1,0 +1,31 @@
+# ===== Node / 前端 =====
+node_modules/
+dist/
+dist-ssr/
+*.local
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# ===== Python / 后端 =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# ===== 运行时数据（自动生成，无需提交） =====
+backend/data/
+backend/uploads/
+
+# ===== 环境变量 =====
+.env
+.env.local
+!.env.example
+
+# ===== 编辑器 / 系统 =====
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

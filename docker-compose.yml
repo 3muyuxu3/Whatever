@@ -1,0 +1,18 @@
+# SimulMirror 一键容器化部署
+# 用法：cp .env.example .env && docker compose up --build
+
+services:
+  simulmirror:
+    build: .
+    image: simulmirror
+    container_name: simulmirror
+    ports:
+      - "3001:3001" # 前端
+      - "5001:5001" # 后端 API
+    # 默认读取根目录 .env（LLM / Zep 等密钥）
+    env_file:
+      - .env
+    volumes:
+      # 持久化上传的种子文件
+      - ./backend/uploads:/app/backend/uploads
+    restart: unless-stopped

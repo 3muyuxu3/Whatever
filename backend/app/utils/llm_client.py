@@ -1,0 +1,69 @@
+"""LLM 客户端封装（OpenAI 兼容格式）。
+
+统一封装主模型与加速模型的调用，内置指数退避重试。
+任意兼容 OpenAI SDK 的 LLM API（如通义千问、DeepSeek 等）均可使用。
+"""
+
+import json
+
+from ..config import config
+from .logger import get_logger
+from .retry import retry
+
+logger = get_logger("llm")
+
+
+class LLMClient:
+    """LLM 调用封装。
+
+    :param boost: 是否使用加速模型（需配置 LLM_BOOST_* 且三项齐全）
+    """
+
+    def __init__(self, boost: bool = False):
+        # 仅当加速模型完整配置时才启用
+        self.boost = boost and config.has_boost_llm()
+
+    @property
+    def model(self) -> str:
+        return config.LLM_BOOST_MODEL_NAME if self.boost else config.LLM_MODEL_NAME
+
+    def _client(self):
+        """惰性创建 OpenAI 客户端（避免模块级导入）。"""
+        from openai import OpenAI
+
+        if self.boost:
+            return OpenAI(
+                api_key=config.LLM_BOOST_API_KEY,
+                base_url=config.LLM_BOOST_BASE_URL,
+            )
+        return OpenAI(api_key=config.LLM_API_KEY, base_url=config.LLM_BASE_URL)
+
+    @retry(max_attempts=3)
+    def chat(self, messages, **kwargs) -> str:
+        """发起对话补全，返回文本内容。"""
+        if not config.has_llm():
+            raise RuntimeError("LLM 未配置（缺少 LLM_API_KEY）")
+        client = self._client()
+        resp = client.chat.completions.create(
+            model=self.model, messages=messages, **kwargs
+        )
+        return resp.choices[0].message.content or ""
+
+    def chat_json(self, messages, **kwargs) -> dict:
+        """发起对话补全并解析 JSON 输出。"""
+        # 请求模型以 JSON 对象格式返回
+        kwargs.setdefault("response_format", {"type": "json_object"})
+        content = self.chat(messages, **kwargs)
+        try:
+            return json.loads(content)
+        except (json.JSONDecodeError, TypeError):
+            # 容错：尝试截取第一个 { 到最后一个 }
+            start, end = content.find("{"), content.rfind("}")
+            if start != -1 and end != -1:
+                return json.loads(content[start : end + 1])
+            raise
+
+
+def get_llm_client(boost: bool = False) -> LLMClient:
+    """获取 LLM 客户端实例。"""
+    return LLMClient(boost=boost)

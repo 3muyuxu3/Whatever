@@ -1,0 +1,12 @@
+# 构建镜像时忽略的文件（减小构建上下文、避免拷贝本地依赖）
+**/node_modules
+**/.venv
+**/dist
+**/__pycache__
+**/.pytest_cache
+backend/data
+backend/uploads
+.git
+.gitignore
+*.md
+!backend/README.md
