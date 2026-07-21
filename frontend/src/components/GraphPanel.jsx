@@ -1,30 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as d3 from 'd3'
+import { useTranslation } from 'react-i18next'
 
 // 10 色调色板：按实体类型着色
 const COLOR_PALETTE = [
-    '#60a5fa', '#f472b6', '#34d399', '#fbbf24', '#a78bfa',
-    '#f87171', '#22d3ee', '#fb923c', '#4ade80', '#e879f9',
+    '#f97316', '#2563eb', '#7c3aed', '#059669', '#dc2626',
+    '#fb923c', '#0ea5e9', '#9333ea', '#65a30d', '#e11d48',
 ]
 
 /**
- * GraphPanel —— D3 力导向知识图谱可视化（核心组件）
+ * GraphPanel —— D3 力导向知识图谱可视化（浅色主题，参考 MiroFish）
  *
- * 特性：
- * - forceSimulation + forceManyBody + forceCenter + forceLink 布局
- * - 节点按实体类型着色（10 色），支持拖拽与缩放
- * - 支持自环边（self-loop）与多重边曲线偏移
- * - 边标签可开关，带背景矩形避免与连线重叠
- * - 点击节点/边展示详情面板；动态生成图例
+ * 特性：白色点阵画布、标题、Refresh/全屏、Show Edge Labels 开关、实体图例、记忆更新提示；
+ * forceSimulation 布局 + 拖拽/缩放 + 自环边 + 多重边曲线 + 节点/边详情。
  *
- * @param {Object}  data        { nodes: [...], edges: [...] }
- * @param {boolean} loading     是否加载中
- * @param {string}  statusText  顶部状态提示（构建中/模拟中/完成）
+ * @param {Object}   data        { nodes, edges }
+ * @param {boolean}  loading     是否加载中
+ * @param {string}   memoryLabel 底部提示药丸文案（可选）
+ * @param {Function} onRefresh   点击刷新回调（可选）
  */
-export default function GraphPanel({ data, loading = false, statusText = '' }) {
+export default function GraphPanel({ data, loading = false, memoryLabel, onRefresh }) {
+    const { t } = useTranslation()
     const svgRef = useRef(null)
     const wrapRef = useRef(null)
-    const [selected, setSelected] = useState(null) // 选中的节点或边
+    const [selected, setSelected] = useState(null)
     const [showEdgeLabels, setShowEdgeLabels] = useState(true)
 
     // 归一化数据：兼容后端不同字段命名
@@ -52,12 +51,11 @@ export default function GraphPanel({ data, loading = false, statusText = '' }) {
 
     useEffect(() => {
         if (!svgRef.current || !graph.nodes.length) return
-
         const width = wrapRef.current?.clientWidth || 800
         const height = wrapRef.current?.clientHeight || 520
 
         const svg = d3.select(svgRef.current)
-        svg.selectAll('*').remove() // 清理旧内容
+        svg.selectAll('*').remove()
         svg.attr('viewBox', [0, 0, width, height])
 
         const root = svg.append('g')
@@ -69,7 +67,7 @@ export default function GraphPanel({ data, loading = false, statusText = '' }) {
             .on('zoom', (event) => root.attr('transform', event.transform))
         svg.call(zoom)
 
-        // 统计相同 source-target 之间的边数量，用于多重边曲线偏移
+        // 统计多重边，用于曲线偏移
         const pairCount = {}
         graph.edges.forEach((e) => {
             const key = [e.source, e.target].sort().join('--')
@@ -77,26 +75,19 @@ export default function GraphPanel({ data, loading = false, statusText = '' }) {
         })
         const pairIndex = {}
 
-        // 力导向仿真
         const simulation = d3
             .forceSimulation(graph.nodes)
-            .force(
-                'link',
-                d3
-                    .forceLink(graph.edges)
-                    .id((d) => d.id)
-                    .distance(120)
-            )
+            .force('link', d3.forceLink(graph.edges).id((d) => d.id).distance(120))
             .force('charge', d3.forceManyBody().strength(-320))
             .force('center', d3.forceCenter(width / 2, height / 2))
             .force('collide', d3.forceCollide().radius(28))
 
-        // 边（使用 path 以支持曲线与自环）
+        // 边（path 支持曲线与自环）
         const link = root
             .append('g')
             .attr('fill', 'none')
-            .attr('stroke', 'rgba(255,255,255,0.25)')
-            .attr('stroke-width', 1.4)
+            .attr('stroke', 'rgba(100,116,139,0.35)')
+            .attr('stroke-width', 1.2)
             .selectAll('path')
             .data(graph.edges)
             .join('path')
@@ -106,24 +97,17 @@ export default function GraphPanel({ data, loading = false, statusText = '' }) {
                 setSelected({ kind: 'edge', data: d })
             })
 
-        // 边标签（含背景矩形）
+        // 边标签（含白色背景矩形）
         const edgeLabelG = root.append('g').style('display', showEdgeLabels ? null : 'none')
-        const edgeLabel = edgeLabelG
-            .selectAll('g')
-            .data(graph.edges)
-            .join('g')
-        edgeLabel
-            .append('rect')
-            .attr('fill', 'rgba(0,0,0,0.6)')
-            .attr('rx', 3)
+        const edgeLabel = edgeLabelG.selectAll('g').data(graph.edges).join('g')
+        edgeLabel.append('rect').attr('fill', 'rgba(255,255,255,0.85)').attr('rx', 3)
         const edgeLabelText = edgeLabel
             .append('text')
             .text((d) => d.name)
-            .attr('fill', '#cbd5e1')
-            .attr('font-size', 10)
+            .attr('fill', '#64748b')
+            .attr('font-size', 9)
             .attr('text-anchor', 'middle')
             .attr('dy', '0.32em')
-        // 根据文字宽度调整背景矩形
         edgeLabelText.each(function () {
             const bbox = this.getBBox()
             const rect = this.previousSibling
@@ -166,20 +150,20 @@ export default function GraphPanel({ data, loading = false, statusText = '' }) {
 
         node
             .append('circle')
-            .attr('r', 12)
+            .attr('r', 11)
             .attr('fill', (d) => color(d.type))
-            .attr('stroke', '#0b0b0f')
-            .attr('stroke-width', 1.5)
+            .attr('stroke', '#ffffff')
+            .attr('stroke-width', 2)
 
         node
             .append('text')
             .text((d) => d.name)
-            .attr('x', 16)
+            .attr('x', 15)
             .attr('y', 4)
-            .attr('fill', '#e5e7eb')
+            .attr('fill', '#334155')
             .attr('font-size', 11)
 
-        // 计算边路径（自环 + 多重边曲线偏移）
+        // 边路径（自环 + 多重边曲线）
         const linkPath = (d) => {
             const x1 = d.source.x
             const y1 = d.source.y
@@ -187,7 +171,6 @@ export default function GraphPanel({ data, loading = false, statusText = '' }) {
             const y2 = d.target.y
             const key = [d.source.id, d.target.id].sort().join('--')
             if (d.source.id === d.target.id) {
-                // 自环
                 const r = 24
                 return `M${x1},${y1} C${x1 - r * 2},${y1 - r * 2} ${x1 + r * 2},${y1 - r * 2} ${x1},${y1}`
             }
@@ -203,9 +186,7 @@ export default function GraphPanel({ data, loading = false, statusText = '' }) {
             return `M${x1},${y1} L${x2},${y2}`
         }
 
-        // 每帧更新位置
         simulation.on('tick', () => {
-            // 重置多重边索引
             Object.keys(pairIndex).forEach((k) => (pairIndex[k] = 0))
             link.attr('d', linkPath)
             node.attr('transform', (d) => `translate(${d.x},${d.y})`)
@@ -216,73 +197,125 @@ export default function GraphPanel({ data, loading = false, statusText = '' }) {
             })
         })
 
-        // 点击空白处取消选中
         svg.on('click', () => setSelected(null))
-
         return () => simulation.stop()
     }, [graph, color, showEdgeLabels])
 
+    const enterFullscreen = () => {
+        const el = wrapRef.current
+        if (el?.requestFullscreen) el.requestFullscreen()
+    }
+
+    const types = Array.from(new Set(graph.nodes.map((n) => n.type)))
+
     return (
-        <div className="relative" ref={wrapRef}>
-            {/* 顶部状态与控制条 */}
-            <div className="mb-3 flex items-center justify-between">
-                <span className="text-sm text-gray-400">{statusText}</span>
+        <div
+            ref={wrapRef}
+            className="relative h-full w-full overflow-hidden bg-white"
+            style={{
+                backgroundImage: 'radial-gradient(#e5e7eb 1px, transparent 1px)',
+                backgroundSize: '18px 18px',
+            }}
+        >
+            {/* 标题 */}
+            <div className="pointer-events-none absolute left-5 top-4 z-10 text-sm font-medium text-neutral-700">
+                {t('process.graphTitle')}
+            </div>
+
+            {/* 右上：Refresh + 全屏 */}
+            <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
                 <button
                     type="button"
-                    onClick={() => setShowEdgeLabels((v) => !v)}
-                    className="liquid-glass rounded-lg px-3 py-1.5 text-xs text-gray-200"
+                    onClick={onRefresh}
+                    className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm text-neutral-600 shadow-sm transition hover:bg-neutral-50"
                 >
-                    {showEdgeLabels ? '隐藏边标签' : '显示边标签'}
+                    <span>↻</span>
+                    {t('process.refresh')}
+                </button>
+                <button
+                    type="button"
+                    onClick={enterFullscreen}
+                    aria-label="Fullscreen"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-500 shadow-sm transition hover:bg-neutral-50"
+                >
+                    ⛶
                 </button>
             </div>
 
-            <div className="relative h-[520px] w-full overflow-hidden rounded-xl border border-white/10 bg-black/40">
-                {loading && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center text-gray-400">
-                        加载中……
-                    </div>
-                )}
-                {!loading && !graph.nodes.length && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center text-gray-500">
-                        暂无图谱数据
-                    </div>
-                )}
-                <svg ref={svgRef} className="h-full w-full" />
+            {/* Show Edge Labels 开关 */}
+            <button
+                type="button"
+                onClick={() => setShowEdgeLabels((v) => !v)}
+                className="absolute right-4 top-14 z-10 flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-sm text-neutral-600 shadow-sm"
+            >
+                <span
+                    className={`relative inline-block h-5 w-9 rounded-full transition ${showEdgeLabels ? 'bg-violet-500' : 'bg-neutral-300'
+                        }`}
+                >
+                    <span
+                        className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${showEdgeLabels ? 'left-[18px]' : 'left-0.5'
+                            }`}
+                    />
+                </span>
+                {t('process.showEdgeLabels')}
+            </button>
 
-                {/* 图例：动态生成 */}
-                {graph.nodes.length > 0 && (
-                    <div className="liquid-glass absolute left-3 top-3 max-w-[40%] rounded-lg p-3 text-xs">
-                        {Array.from(new Set(graph.nodes.map((n) => n.type))).map((type) => (
-                            <div key={type} className="mb-1 flex items-center gap-2">
+            {loading && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center text-neutral-400">
+                    …
+                </div>
+            )}
+            {!loading && !graph.nodes.length && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center text-neutral-400">
+                    {t('common.loading')}
+                </div>
+            )}
+
+            <svg ref={svgRef} className="h-full w-full" />
+
+            {/* 图例 */}
+            {types.length > 0 && (
+                <div className="absolute bottom-4 left-4 z-10 max-w-[45%] rounded-xl border border-neutral-200 bg-white/95 p-3 text-xs shadow-sm">
+                    <div className="mb-2 font-semibold tracking-wide text-neutral-700">
+                        {t('process.entityTypes')}
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                        {types.map((type) => (
+                            <div key={type} className="flex items-center gap-2">
                                 <span
-                                    className="inline-block h-3 w-3 rounded-full"
+                                    className="inline-block h-2.5 w-2.5 rounded-full"
                                     style={{ background: color(type) }}
                                 />
-                                <span className="text-gray-300">{type}</span>
+                                <span className="text-neutral-600">{type}</span>
                             </div>
                         ))}
                     </div>
-                )}
+                </div>
+            )}
 
-                {/* 详情面板 */}
-                {selected && (
-                    <div className="liquid-glass absolute right-3 top-3 w-64 rounded-lg p-4 text-sm">
-                        <div className="mb-2 font-medium text-white">
-                            {selected.kind === 'node' ? '节点详情' : '关系详情'}
-                        </div>
-                        {selected.kind === 'node' ? (
-                            <>
-                                <p className="text-gray-300">
-                                    名称：{selected.data.name}
-                                </p>
-                                <p className="text-gray-400">类型：{selected.data.type}</p>
-                            </>
-                        ) : (
-                            <p className="text-gray-300">关系：{selected.data.name || '—'}</p>
-                        )}
+            {/* 记忆更新提示药丸 */}
+            {memoryLabel && (
+                <div className="absolute bottom-5 left-1/2 z-10 -translate-x-1/2 rounded-full bg-neutral-900/90 px-4 py-2 text-xs font-medium text-white shadow-lg">
+                    {memoryLabel}
+                </div>
+            )}
+
+            {/* 详情面板 */}
+            {selected && (
+                <div className="absolute right-4 top-28 z-10 w-60 rounded-xl border border-neutral-200 bg-white p-4 text-sm shadow-md">
+                    <div className="mb-2 font-medium text-neutral-800">
+                        {selected.kind === 'node' ? '节点' : '关系'}
                     </div>
-                )}
-            </div>
+                    {selected.kind === 'node' ? (
+                        <>
+                            <p className="text-neutral-700">{selected.data.name}</p>
+                            <p className="text-neutral-400">{selected.data.type}</p>
+                        </>
+                    ) : (
+                        <p className="text-neutral-700">{selected.data.name || '—'}</p>
+                    )}
+                </div>
+            )}
         </div>
     )
 }

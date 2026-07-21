@@ -4,6 +4,8 @@
 并在处理完成后读取完整图谱数据。所有 Zep 调用均惰性导入并带重试。
 """
 
+import uuid
+
 from ..config import config
 from ..utils.logger import get_logger
 from ..utils.retry import retry
@@ -76,11 +78,19 @@ def build_graph(project, text: str, on_progress=None) -> str:
     zep = _get_zep()
 
     # 1) 创建 standalone graph
+    # 新版 Zep SDK 要求由调用方显式提供 graph_id（必填关键字参数）。
+    graph_id = f"g-{uuid.uuid4().hex}"
     graph = zep.graph.create(
+        graph_id=graph_id,
         name=(project.name or project.id)[:80],
         description=(project.requirement or "")[:200],
     )
-    graph_id = getattr(graph, "graph_id", None) or getattr(graph, "id", None)
+    # 以服务端返回的 id 为准（若有），否则回退到本地生成的 graph_id。
+    graph_id = (
+        getattr(graph, "graph_id", None)
+        or getattr(graph, "id", None)
+        or graph_id
+    )
     logger.info("已创建 Zep 图谱：%s", graph_id)
     if on_progress:
         on_progress(10)

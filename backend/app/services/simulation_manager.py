@@ -161,6 +161,8 @@ class SimulationManager:
             "round": current_round,
             "max_rounds": sim.get("max_rounds", config.OASIS_DEFAULT_MAX_ROUNDS),
             "action_count": len(actions),
+            "graph_id": sim.get("graph_id"),
+            "requirement": sim.get("requirement", ""),
         }
 
     def stop(self, sim_id: str) -> dict | None:

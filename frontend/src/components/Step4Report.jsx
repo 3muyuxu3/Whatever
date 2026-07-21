@@ -1,110 +1,106 @@
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
-import {
-  generateReport,
-  getReportStatus,
-  getReport,
-  downloadReport,
-} from '../api/report'
+import ReportContent from './ReportContent'
+
+// 从报告内容提取普通段落，作为「检索到的记忆」列表
+function extractMemories(content) {
+  return (content || '')
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith('#') && !l.startsWith('>'))
+    .slice(0, 8)
+}
+
+// 从预测需求拆出关键词标签
+function keywords(requirement) {
+  return (requirement || '')
+    .split(/[\s,，。、；;]+/)
+    .filter(Boolean)
+    .slice(0, 10)
+}
 
 /**
- * Step4Report —— 步骤4：报告生成
- * 触发 ReACT 报告 Agent 异步生成报告，轮询进度，完成后展示 Markdown 内容。
+ * Step4Report —— 步骤4 工作台：报告（左） + 工具调用结果（右）
  */
-export default function Step4Report({ simulationId }) {
+export default function Step4Report({
+  reportId,
+  content,
+  generating = false,
+  outline = [],
+  stats = {},
+  requirement = '',
+  onInteract,
+}) {
   const { t } = useTranslation()
-  const navigate = useNavigate()
-  const [status, setStatus] = useState('idle')
-  const [progress, setProgress] = useState(0)
-  const [content, setContent] = useState('')
-  const [reportId, setReportId] = useState(null)
-
-  const handleGenerate = async () => {
-    setStatus('generating')
-    try {
-      const res = await generateReport({ simulation_id: simulationId })
-      const rid = res.data?.report_id || res.data?.id
-      setReportId(rid)
-      const timer = setInterval(async () => {
-        try {
-          const st = await getReportStatus({ report_id: rid })
-          setProgress(st.data?.progress || 0)
-          if (st.data?.status === 'completed') {
-            clearInterval(timer)
-            const rep = await getReport(rid)
-            setContent(rep.data?.content || rep.data?.markdown || '')
-            setStatus('completed')
-          }
-        } catch (e) {
-          clearInterval(timer)
-          setStatus('error')
-        }
-      }, 3000)
-    } catch (e) {
-      setStatus('error')
-    }
-  }
-
-  // 下载 Markdown 报告
-  const handleDownload = async () => {
-    if (!reportId) return
-    try {
-      const res = await downloadReport(reportId)
-      const url = URL.createObjectURL(new Blob([res.data]))
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `report-${reportId}.md`
-      a.click()
-      URL.revokeObjectURL(url)
-    } catch (e) {
-      /* 忽略 */
-    }
-  }
+  const memories = extractMemories(content)
+  const tags = keywords(requirement)
 
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-medium">{t('steps.step4')}</h2>
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={status === 'generating'}
-            className="rounded-lg bg-white px-5 py-2 text-sm font-medium text-black transition hover:bg-gray-100 disabled:opacity-50"
-          >
-            {status === 'generating' ? `${progress}%` : t('steps.step4')}
-          </button>
-          {status === 'completed' && (
-            <>
-              <button
-                type="button"
-                onClick={handleDownload}
-                className="liquid-glass rounded-lg px-5 py-2 text-sm text-white"
-              >
-                Markdown
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate(`/interaction/${reportId}`)}
-                className="liquid-glass rounded-lg px-5 py-2 text-sm text-white"
-              >
-                {t('steps.step5')}
-              </button>
-            </>
-          )}
-        </div>
+    <div className="flex h-full">
+      {/* 左：报告正文 */}
+      <div className="w-1/2 overflow-auto border-r border-neutral-200 bg-white">
+        <ReportContent
+          reportId={reportId}
+          content={content}
+          generating={generating}
+          outline={outline}
+        />
       </div>
 
-      {/* 报告内容（Markdown 源文本，按空白排版展示） */}
-      <div className="liquid-glass min-h-[320px] rounded-xl p-6">
-        {content ? (
-          <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-gray-200">
-            {content}
-          </pre>
-        ) : (
-          <p className="text-gray-500">{t('common.loading')}</p>
+      {/* 右：工具调用结果（Panorama Search 风格） */}
+      <div className="w-1/2 overflow-auto p-6">
+        {onInteract && content && (
+          <button
+            type="button"
+            onClick={onInteract}
+            className="mb-4 w-full rounded-xl bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800"
+          >
+            {t('steps.step5')} →
+          </button>
         )}
+        <div className="rounded-2xl border border-sky-200 bg-sky-50/60 p-5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold text-sky-900">Panorama Search</h3>
+            <div className="text-xs text-neutral-500">
+              <b className="text-neutral-800">{stats.nodes || 0}</b> Nodes /{' '}
+              <b className="text-neutral-800">{stats.edges || 0}</b> Edges
+            </div>
+          </div>
+          {tags.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-sm text-sky-700">
+              {tags.map((k, i) => (
+                <span key={i}>{k}</span>
+              ))}
+            </div>
+          )}
+          <div className="mt-4 flex gap-2 text-xs">
+            <span className="rounded-md border border-sky-300 bg-white px-3 py-1.5 font-medium text-sky-700">
+              {t('process.validMemory')} ({memories.length})
+            </span>
+            <span className="rounded-md px-3 py-1.5 text-neutral-500">
+              {t('process.historyMemory')}
+            </span>
+            <span className="rounded-md px-3 py-1.5 text-neutral-500">
+              {t('process.involvedEntities')} ({stats.nodes || 0})
+            </span>
+          </div>
+        </div>
+
+        {/* 记忆列表 */}
+        <div className="mt-4 space-y-3">
+          <div className="text-sm font-semibold text-neutral-700">{t('process.validMemory')}</div>
+          {memories.length === 0 && <p className="text-sm text-neutral-400">…</p>}
+          {memories.map((m, i) => (
+            <div
+              key={i}
+              className="flex gap-3 rounded-xl border border-neutral-200 bg-white p-4 text-sm leading-relaxed text-neutral-700 shadow-sm"
+            >
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-xs text-neutral-500">
+                {i + 1}
+              </span>
+              <span>{m}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
