@@ -1,4 +1,5 @@
 import api from './index'
+import { streamPost } from './index'
 
 /**
  * 模拟相关 API（对应后端 /api/simulation 蓝图）
@@ -51,6 +52,10 @@ export const listAgents = (simId) => api.get(`/simulation/agents/${simId}`)
 // 采访单个 Agent
 export const interviewAgent = (payload) =>
     api.post('/simulation/interview', payload)
+
+// 流式采访单个 Agent（逐字输出）
+export const interviewAgentStream = (payload, options) =>
+    streamPost('/simulation/interview/stream', payload, options)
 
 // 批量采访 Agent（问卷调查）
 export const interviewBatch = (payload) =>

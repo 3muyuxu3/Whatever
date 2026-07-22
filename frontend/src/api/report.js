@@ -1,4 +1,5 @@
 import api from './index'
+import { streamPost } from './index'
 
 /**
  * 报告相关 API（对应后端 /api/report 蓝图）
@@ -28,3 +29,7 @@ export const downloadReport = (id) =>
 
 // 与 Report Agent 对话（深度互动）
 export const chatWithReport = (payload) => api.post('/report/chat', payload)
+
+// 与 Report Agent 流式对话（逐字输出）
+export const chatWithReportStream = (payload, options) =>
+    streamPost('/report/chat/stream', payload, options)

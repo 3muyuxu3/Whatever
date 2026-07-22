@@ -4,13 +4,16 @@
 """
 
 import io
+import json
 import threading
 
-from flask import Blueprint, jsonify, request, send_file
+from flask import Blueprint, Response, jsonify, request, send_file, stream_with_context
 
+from ..config import config
 from ..models import TaskStatus, project_store, task_store
 from ..services.report_agent import ReportAgent, generate_report, report_store
 from ..services.simulation_manager import simulation_manager
+from ..utils.llm_client import get_llm_client
 from ..utils.locale import t
 from ..utils.logger import get_logger
 
@@ -141,3 +144,43 @@ def chat():
     agent = ReportAgent(graph_id=graph_id, sim_id=sim_id)
     reply = agent.chat(content, message)
     return jsonify({"reply": reply})
+
+
+@report_bp.post("/chat/stream")
+def chat_stream():
+    """与 Report Agent 流式对话（SSE）：基于报告内容逐字输出回答。"""
+    body = request.get_json(silent=True) or {}
+    report_id = body.get("report_id")
+    message = (body.get("message") or "").strip()
+    report = report_store.get(report_id)
+    content = report.get("content", "") if report else ""
+    has_llm = config.has_llm()
+
+    def gen():
+        if not has_llm:
+            yield "data: " + json.dumps(
+                {"delta": "（需配置 LLM 后可与报告 Agent 对话）"}, ensure_ascii=False) + "\n\n"
+            yield "data: " + json.dumps({"done": True}) + "\n\n"
+            return
+        messages = [
+            {"role": "system", "content": "你是 SimulMirror 报告助手，基于以下报告回答用户的追问。"},
+            {"role": "user",
+                "content": f"【报告】\n{content[:6000]}\n\n【问题】\n{message}"},
+        ]
+        got = False
+        try:
+            client = get_llm_client()
+            for tok in client.chat_stream(messages):
+                got = True
+                yield "data: " + json.dumps({"delta": tok}, ensure_ascii=False) + "\n\n"
+        except Exception as e:  # noqa: BLE001
+            logger.warning("报告流式对话失败：%s", e)
+        if not got:
+            yield "data: " + json.dumps({"delta": "（生成失败，请稍后重试）"}, ensure_ascii=False) + "\n\n"
+        yield "data: " + json.dumps({"done": True}) + "\n\n"
+
+    return Response(
+        stream_with_context(gen()),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )

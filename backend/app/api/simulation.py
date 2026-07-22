@@ -9,7 +9,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, Response, jsonify, request, stream_with_context
 
 from ..config import config
 from ..models import TaskStatus, project_store, task_store
@@ -294,8 +294,13 @@ def inject_variable():
 
 # ---------------- Interview 采访 ----------------
 
-def _answer_as_agent(sim: dict, agent_id: str, question: str) -> str:
-    """当模拟子进程未运行时，基于人设用 LLM 直接作答（保证“与任意个体对话”始终可用）。"""
+def _sse(obj: dict) -> str:
+    """将对象序列化为一条 SSE 消息。"""
+    return "data: " + json.dumps(obj, ensure_ascii=False) + "\n\n"
+
+
+def _interview_messages(sim: dict, agent_id: str, question: str):
+    """构建采访的 LLM 消息（基于人设），返回 (name, messages)。"""
     sim_id = sim.get("id")
     profiles = simulation_manager.read_profiles(sim_id)
     profile = next(
@@ -304,8 +309,6 @@ def _answer_as_agent(sim: dict, agent_id: str, question: str) -> str:
         None,
     )
     name = (profile or {}).get("name") or agent_id or "Agent"
-    if not config.has_llm():
-        return f"作为 {name}，我认为「{question}」值得持续关注。"
     persona_bits = []
     if profile:
         for key in ("bio", "persona", "occupation", "mbti"):
@@ -316,21 +319,28 @@ def _answer_as_agent(sim: dict, agent_id: str, question: str) -> str:
                 "interests: " + ", ".join(profile["interests"]))
     persona = "\n".join(persona_bits) or "（无额外人设信息）"
     requirement = sim.get("requirement", "")
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                f"你在扮演社交模拟世界中的一个人物：{name}。\n人设：\n{persona}\n"
+                f"该世界围绕以下议题演化：{requirement}\n"
+                "请始终以第一人称、贴合人设地回答，真实而简洁（2-4 句）。"
+            ),
+        },
+        {"role": "user", "content": question},
+    ]
+    return name, messages
+
+
+def _answer_as_agent(sim: dict, agent_id: str, question: str) -> str:
+    """当模拟子进程未运行时，基于人设用 LLM 直接作答（保证“与任意个体对话”始终可用）。"""
+    name, messages = _interview_messages(sim, agent_id, question)
+    if not config.has_llm():
+        return f"作为 {name}，我认为「{question}」值得持续关注。"
     try:
         client = get_llm_client()
-        return client.chat(
-            [
-                {
-                    "role": "system",
-                    "content": (
-                        f"你在扮演社交模拟世界中的一个人物：{name}。\n人设：\n{persona}\n"
-                        f"该世界围绕以下议题演化：{requirement}\n"
-                        "请始终以第一人称、贴合人设地回答，真实而简洁（2-4 句）。"
-                    ),
-                },
-                {"role": "user", "content": question},
-            ]
-        )
+        return client.chat(messages)
     except Exception as e:  # noqa: BLE001
         logger.warning("Agent 作答失败：%s", e)
         return f"作为 {name}，我认为「{question}」值得持续关注。"
@@ -372,6 +382,46 @@ def interview():
     answer = _ask_agent(sim, agent_id, question,
                         float(body.get("timeout", 15)))
     return jsonify({"answer": answer, "agent_id": agent_id})
+
+
+@simulation_bp.post("/interview/stream")
+def interview_stream():
+    """流式采访单个 Agent（SSE）：基于人设的 LLM 回答逐字输出。"""
+    body = request.get_json(silent=True) or {}
+    sim_id = body.get("simulation_id")
+    agent_id = body.get("agent_id")
+    question = (body.get("question") or "").strip()
+    sim = simulation_manager.get(sim_id)
+    if not sim:
+        return jsonify({"error": t("not_found")}), 404
+    if not question:
+        return jsonify({"error": t("bad_request")}), 400
+    # 在进入生成器（无请求上下文）前捕获所需数据
+    name, messages = _interview_messages(sim, agent_id, question)
+    has_llm = config.has_llm()
+
+    def gen():
+        if not has_llm:
+            yield _sse({"delta": f"作为 {name}，我认为「{question}」值得持续关注。"})
+            yield _sse({"done": True})
+            return
+        got = False
+        try:
+            client = get_llm_client()
+            for tok in client.chat_stream(messages):
+                got = True
+                yield _sse({"delta": tok})
+        except Exception as e:  # noqa: BLE001
+            logger.warning("流式采访失败：%s", e)
+        if not got:
+            yield _sse({"delta": f"作为 {name}，我认为「{question}」值得持续关注。"})
+        yield _sse({"done": True})
+
+    return Response(
+        stream_with_context(gen()),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @simulation_bp.post("/interview/batch")

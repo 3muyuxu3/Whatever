@@ -49,3 +49,60 @@ api.interceptors.response.use(
 )
 
 export default api
+
+/**
+ * streamPost —— 以 SSE 方式消费后端流式接口（fetch + ReadableStream）
+ *
+ * 后端每条消息形如：`data: {"delta":"..."}\n\n`，结束为 `data: {"done":true}\n\n`。
+ * axios 不便处理浏览器流式响应，这里用原生 fetch。
+ *
+ * @param {string}   path     相对 /api 的路径（如 '/simulation/interview/stream'）
+ * @param {Object}   body     请求体（JSON）
+ * @param {Object}   options
+ * @param {Function} options.onToken (delta, full) => void，每个增量回调
+ * @param {AbortSignal} options.signal 取消信号
+ * @returns {Promise<string>} 完整文本
+ */
+export async function streamPost(path, body, { onToken, signal } = {}) {
+    const res = await fetch(`/api${path}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept-Language': i18next.language || 'zh',
+        },
+        body: JSON.stringify(body || {}),
+        signal,
+    })
+    if (!res.ok || !res.body) {
+        throw new Error(`stream request failed: ${res.status}`)
+    }
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    let buf = ''
+    let full = ''
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buf += decoder.decode(value, { stream: true })
+        const parts = buf.split('\n\n')
+        buf = parts.pop() || '' // 末尾可能是不完整的一段，保留
+        for (const part of parts) {
+            const line = part.trim()
+            if (!line.startsWith('data:')) continue
+            const payload = line.slice(5).trim()
+            if (!payload) continue
+            try {
+                const obj = JSON.parse(payload)
+                if (obj.delta) {
+                    full += obj.delta
+                    if (onToken) onToken(obj.delta, full)
+                }
+                if (obj.done) return full
+            } catch {
+                /* 忽略解析失败的分片 */
+            }
+        }
+    }
+    return full
+}

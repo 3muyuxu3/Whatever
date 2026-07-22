@@ -60,8 +60,27 @@ class LLMClient:
             # 容错：尝试截取第一个 { 到最后一个 }
             start, end = content.find("{"), content.rfind("}")
             if start != -1 and end != -1:
-                return json.loads(content[start : end + 1])
+                return json.loads(content[start: end + 1])
             raise
+
+    def chat_stream(self, messages, **kwargs):
+        """流式对话补全：逐块 yield 文本增量（供 SSE 等实时输出）。
+
+        不带重试（流式中途失败难以幂等重试）；调用方自行处理异常。
+        """
+        if not config.has_llm():
+            raise RuntimeError("LLM 未配置（缺少 LLM_API_KEY）")
+        client = self._client()
+        resp = client.chat.completions.create(
+            model=self.model, messages=messages, stream=True, **kwargs
+        )
+        for chunk in resp:
+            try:
+                delta = chunk.choices[0].delta.content
+            except (AttributeError, IndexError, TypeError):
+                delta = None
+            if delta:
+                yield delta
 
 
 def get_llm_client(boost: bool = False) -> LLMClient:

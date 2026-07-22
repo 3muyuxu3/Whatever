@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { chatWithReport } from '../api/report'
-import { interviewAgent, interviewBatch, listAgents } from '../api/simulation'
+import { chatWithReportStream } from '../api/report'
+import { interviewAgentStream, interviewBatch, listAgents } from '../api/simulation'
 import ReportContent from './ReportContent'
 import ReportCharts from './ReportCharts'
 
@@ -95,36 +95,74 @@ export default function Step5Interaction({ reportId, simId, content, outline = [
 
   const activeThread = activeAgent ? threads[activeAgent.id] || [] : []
 
-  // —— 发送：Report Agent ——
+  // —— 发送：Report Agent（流式） ——
   const sendReport = async () => {
     const q = reportInput.trim()
     if (!q || reportSending) return
-    setReportMsgs((m) => [...m, { role: 'user', content: q }])
+    // 先追加用户消息与一个占位的助手消息（“思考中”），后续逐字填充
+    setReportMsgs((m) => [
+      ...m,
+      { role: 'user', content: q },
+      { role: 'assistant', content: t('process.thinking') },
+    ])
     setReportInput('')
     setReportSending(true)
     try {
-      const res = await chatWithReport({ report_id: reportId, message: q })
-      setReportMsgs((m) => [...m, { role: 'assistant', content: res.data?.reply || res.data?.message || '' }])
+      await chatWithReportStream(
+        { report_id: reportId, message: q },
+        {
+          onToken: (_d, full) =>
+            setReportMsgs((m) => {
+              const arr = [...m]
+              arr[arr.length - 1] = { role: 'assistant', content: full }
+              return arr
+            }),
+        },
+      )
     } catch {
-      setReportMsgs((m) => [...m, { role: 'assistant', content: t('common.error') }])
+      setReportMsgs((m) => {
+        const arr = [...m]
+        arr[arr.length - 1] = { role: 'assistant', content: t('common.error') }
+        return arr
+      })
     } finally {
       setReportSending(false)
     }
   }
 
-  // —— 发送：与个体对话 ——
+  // —— 发送：与个体对话（流式） ——
   const sendAgent = async () => {
     const q = agentInput.trim()
     if (!q || !activeAgent || agentSending) return
     const aid = activeAgent.id
-    setThreads((th) => ({ ...th, [aid]: [...(th[aid] || []), { role: 'user', content: q }] }))
+    setThreads((th) => ({
+      ...th,
+      [aid]: [
+        ...(th[aid] || []),
+        { role: 'user', content: q },
+        { role: 'assistant', content: t('process.thinking') },
+      ],
+    }))
     setAgentInput('')
     setAgentSending(true)
     try {
-      const res = await interviewAgent({ simulation_id: simId, agent_id: aid, question: q })
-      setThreads((th) => ({ ...th, [aid]: [...(th[aid] || []), { role: 'assistant', content: res.data?.answer || '' }] }))
+      await interviewAgentStream(
+        { simulation_id: simId, agent_id: aid, question: q },
+        {
+          onToken: (_d, full) =>
+            setThreads((th) => {
+              const arr = [...(th[aid] || [])]
+              arr[arr.length - 1] = { role: 'assistant', content: full }
+              return { ...th, [aid]: arr }
+            }),
+        },
+      )
     } catch {
-      setThreads((th) => ({ ...th, [aid]: [...(th[aid] || []), { role: 'assistant', content: t('common.error') }] }))
+      setThreads((th) => {
+        const arr = [...(th[aid] || [])]
+        arr[arr.length - 1] = { role: 'assistant', content: t('common.error') }
+        return { ...th, [aid]: arr }
+      })
     } finally {
       setAgentSending(false)
     }
@@ -264,7 +302,6 @@ export default function Step5Interaction({ reportId, simId, content, outline = [
               {reportMsgs.map((m, i) => (
                 <Bubble key={i} role={m.role}>{m.content}</Bubble>
               ))}
-              {reportSending && <Bubble role="assistant">{t('process.thinking')}</Bubble>}
               <div ref={reportEndRef} />
             </div>
 
@@ -330,7 +367,6 @@ export default function Step5Interaction({ reportId, simId, content, outline = [
                     {activeThread.map((m, i) => (
                       <Bubble key={i} role={m.role}>{m.content}</Bubble>
                     ))}
-                    {agentSending && <Bubble role="assistant">{t('process.thinking')}</Bubble>}
                     <div ref={agentEndRef} />
                   </div>
                   <ChatInput
@@ -375,7 +411,7 @@ export default function Step5Interaction({ reportId, simId, content, outline = [
                   onChange={(e) => setSurveyQ(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && sendSurvey()}
                   placeholder={t('process.surveyPlaceholder')}
-                  className="flex-1 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-neutral-800 outline-none transition focus:border-neutral-400"
+                  className="flex-1 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-400"
                 />
                 <button
                   type="button"
@@ -428,7 +464,7 @@ function ChatInput({ value, onChange, onSend, disabled, placeholder }) {
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && onSend()}
         placeholder={placeholder}
-        className="flex-1 rounded-xl border border-neutral-200 px-4 py-3 text-sm text-neutral-800 outline-none transition focus:border-neutral-400"
+        className="flex-1 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-neutral-400"
       />
       <button
         type="button"

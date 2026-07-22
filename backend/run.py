@@ -9,4 +9,6 @@ app = create_app()
 
 if __name__ == "__main__":
     # 直接运行：python run.py
-    app.run(host=config.HOST, port=config.PORT, debug=config.DEBUG)
+    # threaded=True：保证 SSE 流式接口进行中仍能处理其他并发请求
+    app.run(host=config.HOST, port=config.PORT,
+            debug=config.DEBUG, threaded=True)
