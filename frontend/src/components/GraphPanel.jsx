@@ -55,12 +55,21 @@ export default function GraphPanel({ data, loading = false, memoryLabel, onRefre
             type: n.type || (Array.isArray(n.labels) ? n.labels[0] : 'Entity'),
             raw: n,
         }))
-        const edges = (data?.edges || data?.links || []).map((e) => ({
-            source: e.source || e.source_node_uuid || e.from,
-            target: e.target || e.target_node_uuid || e.to,
-            name: e.name || e.type || e.relation || '',
-            raw: e,
-        }))
+        const nodeIds = new Set(nodes.map((n) => n.id))
+        const edges = (data?.edges || data?.links || [])
+            .map((e) => ({
+                source: e.source || e.source_node_uuid || e.from,
+                target: e.target || e.target_node_uuid || e.to,
+                name: e.name || e.type || e.relation || '',
+                raw: e,
+            }))
+            // 过滤悬空边：source/target 必须都在节点集合内。否则 d3 forceLink
+            // 会抛 "node not found"，导致整页崩溃并被路由错误边界替换为 404。
+            .filter(
+                (e) =>
+                    e.source && e.target &&
+                    nodeIds.has(e.source) && nodeIds.has(e.target),
+            )
         return { nodes, edges }
     }, [data])
 
@@ -282,12 +291,12 @@ export default function GraphPanel({ data, loading = false, memoryLabel, onRefre
             </button>
 
             {loading && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center text-neutral-400">
+                <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center text-neutral-400">
                     …
                 </div>
             )}
             {!loading && !graph.nodes.length && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center text-neutral-400">
+                <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center text-neutral-400">
                     {t('process.noGraphData')}
                 </div>
             )}

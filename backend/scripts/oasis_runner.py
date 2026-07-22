@@ -165,8 +165,27 @@ async def _run_platform_async(platform: str, sim_id: str, cfg: dict, work_dir: s
     if os.path.exists(db_path):
         os.remove(db_path)
 
-    env = oasis.make(agent_graph=agent_graph,
-                     platform=ptype, database_path=db_path)
+    if platform == "twitter":
+        # OASIS 对 Twitter 默认使用 twhin-bert recsys（从 HuggingFace 下载 twhin-bert-base），
+        # RecsysType.TWITTER 则依赖 paraphrase-MiniLM-L6-v2；两者在国内均因无法访问
+        # huggingface.co 而反复超时卡死。改用 RANDOM recsys（不加载任何模型，
+        # 且仍保持 platform_type=TWITTER），彻底规避 HuggingFace 依赖。
+        from oasis.social_platform.channel import Channel
+        from oasis.social_platform.platform import Platform
+
+        twitter_platform = Platform(
+            db_path=db_path,
+            channel=Channel(),
+            recsys_type="random",
+            refresh_rec_post_count=2,
+            max_rec_post_len=2,
+            following_post_count=3,
+        )
+        env = oasis.make(agent_graph=agent_graph,
+                         platform=twitter_platform, database_path=db_path)
+    else:
+        env = oasis.make(agent_graph=agent_graph,
+                         platform=ptype, database_path=db_path)
     await env.reset()
 
     logger = ActionLogger(os.path.join(work_dir, "actions.jsonl"))

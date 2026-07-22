@@ -46,6 +46,12 @@ def start_simulation_process(sim_id: str, mode: str, config_path: str, work_dir:
     # 会因中文内容抛 UnicodeDecodeError，导致真实 OASIS 崩溃回退。开启 UTF-8 模式即可修复。
     env = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
 
+    # OASIS 的 Twitter 推荐系统会从 HuggingFace 下载 twhin-bert 等模型；
+    # 国内直连 huggingface.co 常超时（反复 10s 重试）导致模拟卡死。
+    # 默认改用镜像 hf-mirror.com（可被用户环境变量覆盖），并缩短下载超时。
+    env.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
+    env.setdefault("HF_HUB_DOWNLOAD_TIMEOUT", "15")
+
     return subprocess.Popen(cmd, cwd=config.BASE_DIR,
                             creationflags=creationflags, env=env)
 

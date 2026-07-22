@@ -206,7 +206,7 @@ class ReportAgent:
             )
 
             req_id = write_interview_request(self.sim_id, agent_id, question)
-            resp = read_interview_response(self.sim_id, req_id, timeout=15)
+            resp = read_interview_response(self.sim_id, req_id, timeout=8)
             answer = (resp or {}).get("answer", "")
             if answer:
                 return answer
@@ -324,11 +324,19 @@ class ReportAgent:
 
         outline = self._plan(requirement)
         parts = [f"# SimulMirror 预测分析报告\n\n> 预测需求：{requirement}\n"]
+        n = max(1, len(outline))
+        if on_progress:
+            on_progress(10)  # 大纲就绪
         for i, section in enumerate(outline):
+            # 进入第 i 节：先推进一步进度，避免单节耗时较长时前端看起来“卡住”
+            if on_progress:
+                on_progress(int(10 + 88 * i / n))
             body = self._write_section(section, requirement, actions)
             parts.append(f"## {section}\n\n{body}")
             if on_progress:
-                on_progress(int(100 * (i + 1) / max(1, len(outline))))
+                on_progress(int(10 + 88 * (i + 1) / n))
+        if on_progress:
+            on_progress(100)
         return "\n\n".join(parts)
 
     def chat(self, report_content: str, message: str) -> str:
