@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { getActions, getSimulationStatus, startSimulation } from '../api/simulation'
+import { getActions, getSimulationStatus, injectVariable, startSimulation, stopSimulation } from '../api/simulation'
 import { useGraphData } from '../hooks/useGraphData'
 import ProcessLayout from '../components/ProcessLayout'
 import GraphPanel from '../components/GraphPanel'
@@ -15,6 +15,7 @@ export default function SimulationRunView() {
   const { simulationId } = useParams()
   const [params] = useSearchParams()
   const maxRounds = Number(params.get('maxRounds')) || 10
+  const mode = params.get('mode') || 'parallel'
   const { t } = useTranslation()
   const navigate = useNavigate()
 
@@ -38,6 +39,10 @@ export default function SimulationRunView() {
         const st = await getSimulationStatus({ simulation_id: simulationId })
         if (!alive) return
         setStatus((s) => ({ ...s, ...st.data }))
+        if (st.data?.status === 'running' && !startedRef.current) {
+          startedRef.current = true
+          setStarted(true)
+        }
         if (startedRef.current) {
           const ac = await getActions({ simulation_id: simulationId })
           if (!alive) return
@@ -61,15 +66,37 @@ export default function SimulationRunView() {
   }, [simulationId])
 
   const handleStart = useCallback(async () => {
-    pushLog('启动模拟 …')
+    pushLog(`启动模拟 … (${mode}, ${maxRounds} 轮)`)
     try {
-      await startSimulation({ simulation_id: simulationId, max_rounds: maxRounds })
+      await startSimulation({ simulation_id: simulationId, max_rounds: maxRounds, mode })
       startedRef.current = true
       setStarted(true)
     } catch (e) {
       pushLog('启动失败', 'ERROR')
     }
-  }, [simulationId, maxRounds])
+  }, [simulationId, maxRounds, mode])
+
+  const handleStop = useCallback(async () => {
+    pushLog('停止模拟 …')
+    try {
+      await stopSimulation({ simulation_id: simulationId })
+      startedRef.current = false
+      setStarted(false)
+    } catch (e) {
+      pushLog('停止失败', 'ERROR')
+    }
+  }, [simulationId])
+
+  const handleInject = useCallback(async (content) => {
+    try {
+      const res = await injectVariable({ simulation_id: simulationId, content })
+      pushLog(`🛰 ${t('process.godView')}: ${content}`, undefined, 'accent')
+      return res.data
+    } catch (e) {
+      pushLog('注入失败', 'ERROR')
+      throw e
+    }
+  }, [simulationId, t])
 
   const status2 = started
     ? { label: t('process.status.processing'), tone: 'orange' }
@@ -84,6 +111,7 @@ export default function SimulationRunView() {
       primary={
         <GraphPanel
           data={graphData}
+          graphId={graphId}
           memoryLabel={started ? t('process.memoryUpdating') : undefined}
           onRefresh={refresh}
         />
@@ -93,7 +121,10 @@ export default function SimulationRunView() {
           status={status}
           actions={actions}
           started={started}
+          running={status?.status === 'running'}
           onStart={handleStart}
+          onStop={handleStop}
+          onInject={handleInject}
           onGenerateReport={() => navigate(`/report/${simulationId}`)}
         />
       }

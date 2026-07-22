@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as d3 from 'd3'
 import { useTranslation } from 'react-i18next'
+import { getEntity } from '../api/simulation'
 
 // 10 色调色板：按实体类型着色
 const COLOR_PALETTE = [
@@ -19,12 +20,32 @@ const COLOR_PALETTE = [
  * @param {string}   memoryLabel 底部提示药丸文案（可选）
  * @param {Function} onRefresh   点击刷新回调（可选）
  */
-export default function GraphPanel({ data, loading = false, memoryLabel, onRefresh }) {
+export default function GraphPanel({ data, loading = false, memoryLabel, onRefresh, graphId }) {
     const { t } = useTranslation()
     const svgRef = useRef(null)
     const wrapRef = useRef(null)
     const [selected, setSelected] = useState(null)
+    const [detail, setDetail] = useState(null)
+    const [detailLoading, setDetailLoading] = useState(false)
     const [showEdgeLabels, setShowEdgeLabels] = useState(true)
+
+    // 选中节点后，从后端拉取实体详情（摘要 + 关联事实）
+    useEffect(() => {
+        if (!graphId || !selected || selected.kind !== 'node') {
+            setDetail(null)
+            return
+        }
+        const uuid = selected.data.id
+        if (!uuid) return
+        let alive = true
+        setDetail(null)
+        setDetailLoading(true)
+        getEntity(graphId, uuid)
+            .then((res) => { if (alive) setDetail(res.data || null) })
+            .catch(() => { if (alive) setDetail(null) })
+            .finally(() => { if (alive) setDetailLoading(false) })
+        return () => { alive = false }
+    }, [selected, graphId])
 
     // 归一化数据：兼容后端不同字段命名
     const graph = useMemo(() => {
@@ -267,7 +288,7 @@ export default function GraphPanel({ data, loading = false, memoryLabel, onRefre
             )}
             {!loading && !graph.nodes.length && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center text-neutral-400">
-                    {t('common.loading')}
+                    {t('process.noGraphData')}
                 </div>
             )}
 
@@ -302,17 +323,44 @@ export default function GraphPanel({ data, loading = false, memoryLabel, onRefre
 
             {/* 详情面板 */}
             {selected && (
-                <div className="absolute right-4 top-28 z-10 w-60 rounded-xl border border-neutral-200 bg-white p-4 text-sm shadow-md">
+                <div className="absolute right-4 top-28 z-10 max-h-[68%] w-72 overflow-auto rounded-xl border border-neutral-200 bg-white p-4 text-sm shadow-md">
                     <div className="mb-2 font-medium text-neutral-800">
-                        {selected.kind === 'node' ? '节点' : '关系'}
+                        {selected.kind === 'node' ? t('process.nodeDetail') : t('process.edgeDetail')}
                     </div>
                     {selected.kind === 'node' ? (
                         <>
-                            <p className="text-neutral-700">{selected.data.name}</p>
-                            <p className="text-neutral-400">{selected.data.type}</p>
+                            <p className="font-semibold text-neutral-800">{selected.data.name}</p>
+                            <p className="mb-2 text-xs text-neutral-400">{selected.data.type}</p>
+                            {detailLoading && (
+                                <p className="text-xs text-neutral-400">{t('common.loading')}</p>
+                            )}
+                            {detail?.node?.summary && (
+                                <p className="mb-2 text-xs leading-relaxed text-neutral-600">
+                                    {detail.node.summary}
+                                </p>
+                            )}
+                            {detail?.edges?.length > 0 && (
+                                <div className="mt-2 border-t border-neutral-100 pt-2">
+                                    <div className="mb-1 text-xs font-semibold text-neutral-500">
+                                        {t('process.relatedFacts')} ({detail.edges.length})
+                                    </div>
+                                    <ul className="space-y-1">
+                                        {detail.edges.slice(0, 10).map((e, i) => (
+                                            <li key={i} className="text-xs leading-relaxed text-neutral-600">
+                                                · {e.fact || e.name}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
                         </>
                     ) : (
-                        <p className="text-neutral-700">{selected.data.name || '—'}</p>
+                        <>
+                            <p className="text-neutral-700">{selected.data.name || '—'}</p>
+                            {selected.data.raw?.fact && (
+                                <p className="mt-2 text-xs leading-relaxed text-neutral-500">{selected.data.raw.fact}</p>
+                            )}
+                        </>
                     )}
                 </div>
             )}

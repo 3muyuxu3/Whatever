@@ -28,7 +28,7 @@ i18n
     // 接入 react-i18next
     .use(initReactI18next)
     .init({
-        fallbackLng: 'zh',
+        fallbackLng: 'en',
         supportedLngs: SUPPORTED_LANGUAGES.map((l) => l.code),
         ns: ['translation'],
         defaultNS: 'translation',

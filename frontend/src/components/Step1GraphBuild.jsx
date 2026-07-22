@@ -40,7 +40,7 @@ function Stat({ value, label }) {
  * @param {Object} stats    { nodes, edges, schema }
  * @param {Function} onBuild 触发构建
  */
-export default function Step1GraphBuild({ project, building = false, progress = 0, stats = {}, onBuild }) {
+export default function Step1GraphBuild({ project, building = false, progress = 0, stats = {}, onBuild, onReset }) {
     const { t } = useTranslation()
     const ontology = project?.ontology || {}
     const entityTypes = (ontology.entity_types || []).map((e) => e.name || e)
@@ -92,6 +92,17 @@ export default function Step1GraphBuild({ project, building = false, progress = 
                         </div>
                     </div>
                 )}
+
+                {project?.analysis_summary && (
+                    <div className="mt-4 rounded-xl bg-neutral-50 p-4">
+                        <div className="mb-1.5 text-xs font-semibold tracking-wide text-neutral-400">
+                            {t('process.analysisSummary')}
+                        </div>
+                        <p className="text-sm leading-relaxed text-neutral-600">
+                            {project.analysis_summary}
+                        </p>
+                    </div>
+                )}
             </section>
 
             {/* 02 GraphRAG 构建 */}
@@ -127,6 +138,15 @@ export default function Step1GraphBuild({ project, building = false, progress = 
                         className="mt-5 w-full rounded-xl bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         {building ? `${progress}%` : t('process.startBuild')}
+                    </button>
+                )}
+                {graphReady && onReset && (
+                    <button
+                        type="button"
+                        onClick={onReset}
+                        className="mt-5 w-full rounded-xl border border-neutral-200 px-5 py-2.5 text-sm font-medium text-neutral-600 transition hover:bg-neutral-50"
+                    >
+                        {t('process.rebuild')}
                     </button>
                 )}
             </section>

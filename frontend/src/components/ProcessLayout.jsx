@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import ConsolePanel from './ConsolePanel'
+import LanguageSwitcher from './LanguageSwitcher'
 
 const GITHUB_URL = 'https://github.com/3muyuxu3/muyuxu'
 
@@ -36,12 +37,9 @@ export default function ProcessLayout({
     secondary,
     consoleData,
 }) {
-    const { t, i18n } = useTranslation()
+    const { t } = useTranslation()
     const navigate = useNavigate()
     const [view, setView] = useState(defaultView)
-
-    const toggleLang = () =>
-        i18n.changeLanguage(i18n.language?.startsWith('zh') ? 'en' : 'zh')
 
     const VIEW_TABS = [
         { key: 'graph', label: t('process.views.graph') },
@@ -108,13 +106,7 @@ export default function ProcessLayout({
                             </span>
                         )}
                     </div>
-                    <button
-                        type="button"
-                        onClick={toggleLang}
-                        className="flex items-center gap-1 rounded-lg border border-neutral-200 px-2.5 py-1.5 text-sm text-neutral-600 transition hover:bg-neutral-100"
-                    >
-                        EN/中 <span className="text-xs">⇄</span>
-                    </button>
+                    <LanguageSwitcher variant="light" />
                     <a
                         href={GITHUB_URL}
                         target="_blank"

@@ -101,5 +101,10 @@
         "step4": "Relatório",
         "step5": "Interação"
     },
+    "reports": {
+        "title": "Relatórios de previsão",
+        "subtitle": "Reveja os relatórios de previsão que você gerou",
+        "empty": "Ainda sem relatórios — execute uma simulação para gerar um."
+    },
     "language": "Idioma"
 }

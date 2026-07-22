@@ -29,7 +29,8 @@ def generate():
     sim_id = body.get("simulation_id")
     sim = simulation_manager.get(sim_id)
     # 允许在无模拟记录时也生成（用请求中的 requirement），以增强健壮性
-    requirement = body.get("requirement") or (sim.get("requirement") if sim else "")
+    requirement = body.get("requirement") or (
+        sim.get("requirement") if sim else "")
     graph_id = body.get("graph_id") or (sim.get("graph_id") if sim else None)
 
     report = report_store.create(simulation_id=sim_id)
@@ -45,11 +46,15 @@ def generate():
                 task_store.update(task.id, progress=p)
                 report_store.update(report["id"], progress=p)
 
-            content = generate_report(
-                graph_id, sim_id, requirement, actions, on_progress=on_progress
+            agent = ReportAgent(graph_id=graph_id, sim_id=sim_id)
+            content = agent.generate(
+                requirement, actions, on_progress=on_progress)
+            report_store.update(
+                report["id"], content=content, status="completed",
+                tool_trace=agent.tool_trace,
             )
-            report_store.update(report["id"], content=content, status="completed")
-            task_store.update(task.id, status=TaskStatus.COMPLETED, progress=100)
+            task_store.update(
+                task.id, status=TaskStatus.COMPLETED, progress=100)
         except Exception as e:  # noqa: BLE001
             logger.error("报告生成失败：%s", e)
             report_store.update(report["id"], status="failed")
@@ -128,7 +133,8 @@ def chat():
     report = report_store.get(report_id)
     content = report.get("content", "") if report else ""
 
-    sim = simulation_manager.get(report.get("simulation_id")) if report else None
+    sim = simulation_manager.get(report.get(
+        "simulation_id")) if report else None
     graph_id = sim.get("graph_id") if sim else None
     sim_id = sim.get("id") if sim else None
 

@@ -30,8 +30,18 @@ def _try_real_oasis(sim_id: str, cfg: dict, work_dir: str) -> bool:
     if not os.getenv("LLM_API_KEY"):
         return False
     try:
-        raise NotImplementedError("真实 OASIS 运行需在部署环境中启用")
-    except Exception:  # noqa: BLE001
+        from oasis_runner import run_real_simulation
+
+        run_real_simulation(PLATFORMS, sim_id, cfg, work_dir)
+        return True
+    except Exception as e:  # noqa: BLE001
+        # 任何异常都回退到降级模拟；清空可能的部分输出以保证干净状态
+        try:
+            open(os.path.join(work_dir, "actions.jsonl"),
+                 "w", encoding="utf-8").close()
+        except Exception:  # noqa: BLE001
+            pass
+        print(f"[oasis] 真实 Reddit 模拟失败，回退到降级循环：{e}")
         return False
 
 

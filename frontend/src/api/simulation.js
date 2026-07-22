@@ -32,6 +32,22 @@ export const getSimulationStatus = (payload) =>
 // 获取动作历史（actions.jsonl 内容）
 export const getActions = (payload) => api.post('/simulation/actions', payload)
 
+// 停止正在运行的模拟
+export const stopSimulation = (payload) => api.post('/simulation/stop', payload)
+
+// 上帝视角：向模拟世界动态注入新事件 / 变量
+export const injectVariable = (payload) => api.post('/simulation/inject', payload)
+
+// 获取模拟详情（配置 + 人设 + 状态）
+export const getSimulationDetail = (simId) =>
+    api.get(`/simulation/detail/${simId}`)
+
+// 编辑模拟配置（轮次 / 平台开关）
+export const updateSimConfig = (payload) => api.post('/simulation/config', payload)
+
+// 列出可对话 / 可调查的 Agent（基于已生成人设）
+export const listAgents = (simId) => api.get(`/simulation/agents/${simId}`)
+
 // 采访单个 Agent
 export const interviewAgent = (payload) =>
     api.post('/simulation/interview', payload)

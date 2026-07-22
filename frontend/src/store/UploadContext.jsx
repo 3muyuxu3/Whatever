@@ -9,18 +9,18 @@ import { createContext, useContext, useState } from 'react'
 const UploadContext = createContext(null)
 
 export function UploadProvider({ children }) {
-    const [file, setFile] = useState(null) // 待上传的种子文件（File 对象）
+    const [files, setFiles] = useState([]) // 待上传的种子文件（File 对象数组，支持多文件）
     const [requirement, setRequirement] = useState('') // 预测需求描述文本
 
     // 重置为初始状态
     const reset = () => {
-        setFile(null)
+        setFiles([])
         setRequirement('')
     }
 
     return (
         <UploadContext.Provider
-            value={{ file, setFile, requirement, setRequirement, reset }}
+            value={{ files, setFiles, requirement, setRequirement, reset }}
         >
             {children}
         </UploadContext.Provider>

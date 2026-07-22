@@ -38,9 +38,16 @@ def start_simulation_process(sim_id: str, mode: str, config_path: str, work_dir:
     # Windows 下创建新进程组，便于后续优雅终止
     creationflags = 0
     if os.name == "nt":
-        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP  # type: ignore[attr-defined]
+        # type: ignore[attr-defined]
+        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP
 
-    return subprocess.Popen(cmd, cwd=config.BASE_DIR, creationflags=creationflags)
+    # 强制子进程以 UTF-8 打开文件：OASIS 的 generate_reddit_agent_graph 等以
+    # open(path, "r") 读取人设文件（未指定编码），在中文 Windows（默认 GBK）下
+    # 会因中文内容抛 UnicodeDecodeError，导致真实 OASIS 崩溃回退。开启 UTF-8 模式即可修复。
+    env = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
+
+    return subprocess.Popen(cmd, cwd=config.BASE_DIR,
+                            creationflags=creationflags, env=env)
 
 
 def terminate_process(proc) -> None:

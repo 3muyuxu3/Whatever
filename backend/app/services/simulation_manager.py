@@ -137,6 +137,68 @@ class SimulationManager:
                     continue
         return actions[-limit:]
 
+    def append_action(self, sim_id: str, **action) -> None:
+        """直接追加一条动作到日志（用于未运行时记录上帝视角注入等）。"""
+        action.setdefault("ts", time.time())
+        path = self.actions_path(sim_id)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(action, ensure_ascii=False) + "\n")
+
+    def is_running(self, sim_id: str) -> bool:
+        """该模拟的子进程是否仍在运行。"""
+        proc = self._procs.get(sim_id)
+        return bool(proc and proc.poll() is None)
+
+    def get_config(self, sim_id: str) -> dict:
+        """读取模拟配置（config.json）。"""
+        path = self.config_path(sim_id)
+        if not os.path.exists(path):
+            return {}
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:  # noqa: BLE001
+            return {}
+
+    def read_profiles(self, sim_id: str) -> list[dict]:
+        """读取已生成的 Agent 人设（profiles_reddit.json）。"""
+        path = os.path.join(self.work_dir(sim_id), "profiles_reddit.json")
+        if not os.path.exists(path):
+            return []
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return data if isinstance(data, list) else []
+        except Exception:  # noqa: BLE001
+            return []
+
+    def list_agents(self, sim_id: str) -> list[dict]:
+        """返回可对话的 Agent 列表（优先取人设，回退到动作日志中出现过的 Agent）。"""
+        profiles = self.read_profiles(sim_id)
+        if profiles:
+            agents = []
+            for i, p in enumerate(profiles):
+                agents.append(
+                    {
+                        "id": p.get("entity_uuid") or p.get("name") or str(i),
+                        "name": p.get("name") or f"Agent {i}",
+                        "bio": p.get("bio", ""),
+                        "persona": p.get("persona", ""),
+                        "occupation": p.get("occupation", ""),
+                        "mbti": p.get("mbti", ""),
+                        "interests": p.get("interests", []) or [],
+                    }
+                )
+            return agents
+        # 回退：从动作日志聚合出现过的 Agent
+        seen: dict[str, dict] = {}
+        for a in self.read_actions(sim_id, limit=2000):
+            aid = a.get("agent_id")
+            if aid and aid not in seen and aid != "seed":
+                seen[aid] = {"id": aid, "name": a.get("agent_name") or aid}
+        return list(seen.values())
+
     def status(self, sim_id: str) -> dict | None:
         """计算并返回模拟状态（结合进程存活情况与动作日志）。"""
         sim = self.get(sim_id)

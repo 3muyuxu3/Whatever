@@ -30,9 +30,18 @@ def _try_real_oasis(sim_id: str, cfg: dict, work_dir: str) -> bool:
     if not os.getenv("LLM_API_KEY"):
         return False
     try:
-        # 真实 OASIS 双平台并行接入点（需完整依赖 + 密钥）。
-        raise NotImplementedError("真实 OASIS 运行需在部署环境中启用")
-    except Exception:  # noqa: BLE001
+        from oasis_runner import run_real_simulation
+
+        run_real_simulation(PLATFORMS, sim_id, cfg, work_dir)
+        return True
+    except Exception as e:  # noqa: BLE001
+        # 清空可能产生的部分输出，确保回退到降级循环时从干净状态开始
+        try:
+            open(os.path.join(work_dir, "actions.jsonl"),
+                 "w", encoding="utf-8").close()
+        except Exception:  # noqa: BLE001
+            pass
+        print(f"[oasis] 真实双平台模拟失败，回退到降级循环：{e}")
         return False
 
 

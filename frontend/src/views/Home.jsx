@@ -5,6 +5,7 @@ import FadeIn from '../components/FadeIn'
 import AnimatedHeading from '../components/AnimatedHeading'
 import LanguageSwitcher from '../components/LanguageSwitcher'
 import HistoryDatabase from '../components/HistoryDatabase'
+import ReportHistory from '../components/ReportHistory'
 import PeepsCrowd from '../components/PeepsCrowd'
 import { useUpload } from '../store/UploadContext'
 import { generateOntology } from '../api/graph'
@@ -32,30 +33,48 @@ const WORKFLOW_STEPS = ['step1', 'step2', 'step3', 'step4']
 export default function Home() {
     const { t } = useTranslation()
     const navigate = useNavigate()
-    const { file, setFile, requirement, setRequirement } = useUpload()
+    const { files, setFiles, requirement, setRequirement } = useUpload()
     const fileInputRef = useRef(null)
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState('')
+    const [dragOver, setDragOver] = useState(false)
+    const [mobileOpen, setMobileOpen] = useState(false)
 
     // 平滑滚动到页面内的指定区块
     const scrollTo = (id) => {
         document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
     }
 
-    // 处理文件选择
-    const onSelectFile = (e) => {
-        const f = e.target.files?.[0]
-        if (f) setFile(f)
+    // 追加文件（去重：同名同大小视为重复）
+    const addFiles = (list) => {
+        const incoming = Array.from(list || [])
+        if (!incoming.length) return
+        setFiles((prev) => {
+            const merged = [...prev]
+            for (const f of incoming) {
+                if (!merged.some((x) => x.name === f.name && x.size === f.size)) merged.push(f)
+            }
+            return merged
+        })
     }
 
-    // 提交：上传文件 + 预测需求 -> 生成本体 -> 进入处理流程页
+    // 处理文件选择 / 拖放 / 移除
+    const onSelectFile = (e) => addFiles(e.target.files)
+    const removeFile = (idx) => setFiles((prev) => prev.filter((_, i) => i !== idx))
+    const onDrop = (e) => {
+        e.preventDefault()
+        setDragOver(false)
+        addFiles(e.dataTransfer?.files)
+    }
+
+    // 提交：上传文件（支持多个） + 预测需求 -> 生成本体 -> 进入处理流程页
     const handleBuild = async () => {
-        if (!file || submitting) return
+        if (!files.length || submitting) return
         setSubmitting(true)
         setError('')
         try {
             const formData = new FormData()
-            formData.append('file', file)
+            files.forEach((f) => formData.append('file', f))
             formData.append('requirement', requirement)
             const res = await generateOntology(formData)
             const projectId = res.data?.project_id || res.data?.id
@@ -137,6 +156,15 @@ export default function Home() {
 
                             {/* 右：语言切换 + GitHub 入口 + 主按钮 */}
                             <div className="flex items-center gap-3">
+                                {/* 移动端菜单按钮 */}
+                                <button
+                                    type="button"
+                                    onClick={() => setMobileOpen((v) => !v)}
+                                    aria-label="Menu"
+                                    className="flex h-9 w-9 items-center justify-center rounded-lg text-white transition hover:bg-white/10 md:hidden"
+                                >
+                                    <span className="text-xl leading-none">☰</span>
+                                </button>
                                 <LanguageSwitcher className="hidden sm:block" />
                                 {/* GitHub 入口（图标来自 icons8） */}
                                 <a
@@ -162,6 +190,37 @@ export default function Home() {
                                 </button>
                             </div>
                         </nav>
+
+                        {/* 移动端下拉菜单 */}
+                        {mobileOpen && (
+                            <div className="liquid-glass mt-2 flex flex-col gap-1 rounded-xl p-2 text-sm md:hidden">
+                                {[
+                                    ['capabilities', 'nav.capabilities'],
+                                    ['workflow', 'nav.workflow'],
+                                    ['start', 'nav.vision'],
+                                ].map(([id, key]) => (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() => { scrollTo(id); setMobileOpen(false) }}
+                                        className="rounded-lg px-4 py-2 text-left text-white transition hover:bg-white/10"
+                                    >
+                                        {t(key)}
+                                    </button>
+                                ))}
+                                <a
+                                    href={GITHUB_URL}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="rounded-lg px-4 py-2 text-white transition hover:bg-white/10"
+                                >
+                                    {t('nav.docs')}
+                                </a>
+                                <div className="px-2 py-1">
+                                    <LanguageSwitcher />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* ---- Hero 文案（贴视口底部） ---- */}
@@ -272,11 +331,14 @@ export default function Home() {
                 <p className="mb-10 max-w-2xl text-gray-400">{t('start.subtitle')}</p>
 
                 <div className="liquid-glass rounded-2xl p-6 md:p-8">
-                    {/* 文件拖放/选择区 */}
-                    <button
-                        type="button"
+                    {/* 文件拖放 / 选择区（支持多文件 + 拖放） */}
+                    <div
                         onClick={() => fileInputRef.current?.click()}
-                        className="flex w-full flex-col items-center justify-center rounded-xl border border-dashed border-white/20 px-6 py-12 text-center transition hover:border-white/40"
+                        onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+                        onDragLeave={() => setDragOver(false)}
+                        onDrop={onDrop}
+                        className={`flex w-full cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-6 py-12 text-center transition ${dragOver ? 'border-white/60 bg-white/5' : 'border-white/20 hover:border-white/40'
+                            }`}
                     >
                         <img
                             src="https://img.icons8.com/ios/100/ffffff/upload-to-cloud--v1.png"
@@ -284,18 +346,42 @@ export default function Home() {
                             className="mb-4 h-10 w-10 opacity-80"
                             loading="lazy"
                         />
-                        <span className="text-white">
-                            {file ? `${t('start.selectedFile')}: ${file.name}` : t('start.dropHint')}
-                        </span>
+                        <span className="text-white">{t('start.dropHint')}</span>
                         <span className="mt-2 text-xs text-gray-500">{t('start.fileTypes')}</span>
-                    </button>
+                    </div>
                     <input
                         ref={fileInputRef}
                         type="file"
                         accept=".pdf,.txt,.md"
+                        multiple
                         className="hidden"
                         onChange={onSelectFile}
                     />
+
+                    {/* 已选择文件列表 */}
+                    {files.length > 0 && (
+                        <div className="mt-4 space-y-2">
+                            <div className="text-xs text-gray-400">
+                                {t('start.selectedFile')} ({files.length})
+                            </div>
+                            {files.map((f, i) => (
+                                <div
+                                    key={`${f.name}-${i}`}
+                                    className="flex items-center justify-between rounded-lg border border-white/10 bg-black/30 px-4 py-2 text-sm"
+                                >
+                                    <span className="truncate text-gray-200">{f.name}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeFile(i)}
+                                        className="ml-3 shrink-0 text-gray-500 transition hover:text-white"
+                                        aria-label="remove"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
 
                     {/* 预测需求 */}
                     <label className="mb-2 mt-6 block text-sm text-gray-300">
@@ -316,7 +402,7 @@ export default function Home() {
                         <button
                             type="button"
                             onClick={handleBuild}
-                            disabled={!file || submitting}
+                            disabled={!files.length || submitting}
                             className="rounded-lg bg-white px-8 py-3 font-medium text-black transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                             {submitting ? t('start.building') : t('start.button')}
@@ -329,6 +415,13 @@ export default function Home() {
                     <h3 className="mb-2 text-2xl font-normal">{t('history.title')}</h3>
                     <p className="mb-8 text-gray-400">{t('history.subtitle')}</p>
                     <HistoryDatabase />
+                </div>
+
+                {/* 历史报告 */}
+                <div className="mt-16">
+                    <h3 className="mb-2 text-2xl font-normal">{t('reports.title')}</h3>
+                    <p className="mb-8 text-gray-400">{t('reports.subtitle')}</p>
+                    <ReportHistory />
                 </div>
             </section>
 

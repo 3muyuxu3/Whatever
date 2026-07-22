@@ -25,6 +25,9 @@ graph_bp = Blueprint("graph", __name__)
 # 项目 -> 各阶段任务 ID 的映射（用于状态轮询）
 _ontology_tasks: dict[str, str] = {}
 _build_tasks: dict[str, str] = {}
+# 项目 -> 构建中的 graph_id（图谱创建后即写入，供前端在构建期间实时可视化；
+# 与 project.graph_id 区分：后者仅在构建完成时才置位，用于解锁下一步）
+_build_graph_ids: dict[str, str] = {}
 
 
 # ---------------- 项目管理 ----------------
@@ -62,34 +65,53 @@ def reset_project(project_id: str):
 
 @graph_bp.post("/ontology/generate")
 def ontology_generate():
-    """上传种子文件 + 预测需求，异步生成本体定义。"""
+    """上传种子文件（支持多文件） + 预测需求，异步生成本体定义。"""
     requirement = request.form.get("requirement", "")
-    file = request.files.get("file")
-    if not file:
+    # 兼容单文件字段名 file 与多文件字段名 files
+    files = request.files.getlist("file") + request.files.getlist("files")
+    files = [f for f in files if f and f.filename]
+    if not files:
         return jsonify({"error": t("bad_request")}), 400
 
-    # 创建项目并保存文件
-    filename = secure_filename(file.filename or "seed.txt")
+    # 创建项目并保存全部文件
+    first_name = secure_filename(files[0].filename or "seed.txt")
     project = project_store.create(
-        name=filename, requirement=requirement, file_name=filename
+        name=(request.form.get("project_name") or first_name),
+        requirement=requirement,
+        file_name=first_name,
     )
     project_dir = os.path.join(config.UPLOAD_DIR, project.id)
     os.makedirs(project_dir, exist_ok=True)
-    file_path = os.path.join(project_dir, filename)
-    file.save(file_path)
+    saved = []  # [(filename, path)]
+    for f in files:
+        fn = secure_filename(f.filename or "seed.txt")
+        fp = os.path.join(project_dir, fn)
+        f.save(fp)
+        saved.append((fn, fp))
+    project_store.update(project.id, file_names=[n for n, _ in saved])
 
-    # 后台任务：解析文件 -> 生成本体
+    # 后台任务：解析全部文件 -> 生成本体
     task = task_store.create("ontology")
     _ontology_tasks[project.id] = task.id
 
     def _run():
         task_store.update(task.id, status=TaskStatus.RUNNING, progress=10)
         try:
-            text = parse_file(file_path)
+            parts = []
+            for fn, fp in saved:
+                try:
+                    parts.append(f"=== {fn} ===\n{parse_file(fp)}")
+                except Exception as e:  # noqa: BLE001
+                    logger.warning("解析文件失败 %s：%s", fn, e)
+            text = "\n\n".join(parts)
             task_store.update(task.id, progress=40)
             ontology = generate_ontology(text, requirement)
             project_store.update(
-                project.id, ontology=ontology, status="ontology_ready")
+                project.id,
+                ontology=ontology,
+                analysis_summary=ontology.get("analysis_summary", ""),
+                status="ontology_ready",
+            )
             task_store.update(
                 task.id, status=TaskStatus.COMPLETED, progress=100, result=ontology
             )
@@ -121,14 +143,27 @@ def build():
         task_store.update(task.id, status=TaskStatus.RUNNING, progress=5)
         try:
             file_dir = os.path.join(config.UPLOAD_DIR, project_id)
-            file_path = os.path.join(file_dir, project.file_name or "")
-            text = parse_file(file_path) if os.path.exists(file_path) else ""
+            names = project.file_names or (
+                [project.file_name] if project.file_name else [])
+            parts = []
+            for fn in names:
+                fp = os.path.join(file_dir, fn)
+                if os.path.exists(fp):
+                    try:
+                        parts.append(parse_file(fp))
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning("解析文件失败 %s：%s", fn, e)
+            text = "\n\n".join(parts)
 
             def on_progress(p):
                 task_store.update(task.id, progress=p)
 
+            def on_graph_created(gid):
+                _build_graph_ids[project_id] = gid
+
             graph_id = graph_builder.build_graph(
-                project, text, on_progress=on_progress)
+                project, text, on_progress=on_progress,
+                on_graph_created=on_graph_created)
             project_store.update(
                 project_id, graph_id=graph_id, status="graph_ready")
             task_store.update(task.id, status=TaskStatus.COMPLETED, progress=100,
@@ -151,12 +186,15 @@ def build_status():
         project_id) or _ontology_tasks.get(project_id)
     task = task_store.get(task_id) if task_id else None
     project = project_store.get(project_id)
+    # 构建中优先返回临时 graph_id，让前端在建图过程中即可拉取并实时展示图谱
+    live_graph_id = (project.graph_id if project and project.graph_id
+                     else _build_graph_ids.get(project_id))
     return jsonify(
         {
             "status": (task.status.value if task else (project.status if project else "unknown")),
             "progress": task.progress if task else 0,
             "error": task.error if task else None,
-            "graph_id": project.graph_id if project else None,
+            "graph_id": live_graph_id,
         }
     )
 

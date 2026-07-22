@@ -1,5 +1,23 @@
 import { useTranslation } from 'react-i18next'
+import { downloadReport } from '../api/report'
 import ReportContent from './ReportContent'
+import ReportCharts from './ReportCharts'
+
+// 报告生成期间展示的 4 种检索工具
+const TOOLS = [
+  { key: 'toolInsight', icon: 'https://img.icons8.com/ios/50/7c3aed/idea.png' },
+  { key: 'toolPanorama', icon: 'https://img.icons8.com/ios/50/0ea5e9/globe--v1.png' },
+  { key: 'toolQuick', icon: 'https://img.icons8.com/ios/50/f59e0b/flash-on.png' },
+  { key: 'toolInterview', icon: 'https://img.icons8.com/ios/50/059669/conference-call.png' },
+]
+
+// 工具名 -> 展示元数据（用于真实 ReACT 调用轨迹）
+const TOOL_META = {
+  QuickSearch: { color: '#f59e0b', key: 'toolQuick' },
+  PanoramaSearch: { color: '#0ea5e9', key: 'toolPanorama' },
+  InsightForge: { color: '#7c3aed', key: 'toolInsight' },
+  InterviewAgents: { color: '#059669', key: 'toolInterview' },
+}
 
 // 从报告内容提取普通段落，作为「检索到的记忆」列表
 function extractMemories(content) {
@@ -28,11 +46,30 @@ export default function Step4Report({
   outline = [],
   stats = {},
   requirement = '',
+  actions = [],
+  toolTrace = [],
   onInteract,
 }) {
   const { t } = useTranslation()
   const memories = extractMemories(content)
   const tags = keywords(requirement)
+
+  const handleDownload = async () => {
+    if (!reportId) return
+    try {
+      const res = await downloadReport(reportId)
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'text/markdown' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `report-${reportId}.md`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      /* 忽略下载错误 */
+    }
+  }
 
   return (
     <div className="flex h-full">
@@ -48,15 +85,88 @@ export default function Step4Report({
 
       {/* 右：工具调用结果（Panorama Search 风格） */}
       <div className="w-1/2 overflow-auto p-6">
-        {onInteract && content && (
+        {/* 工具栏：下载 + 进入深度互动 */}
+        <div className="mb-4 flex gap-2">
           <button
             type="button"
-            onClick={onInteract}
-            className="mb-4 w-full rounded-xl bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800"
+            onClick={handleDownload}
+            disabled={!content}
+            className="flex-1 rounded-xl border border-neutral-200 bg-white px-5 py-2.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-40"
           >
-            {t('steps.step5')} →
+            ↓ {t('process.downloadReport')}
           </button>
+          {onInteract && content && (
+            <button
+              type="button"
+              onClick={onInteract}
+              className="flex-1 rounded-xl bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800"
+            >
+              {t('steps.step5')} →
+            </button>
+          )}
+        </div>
+
+        {/* 生成中：检索工具调用活动 */}
+        {generating && (
+          <div className="mb-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-neutral-700">
+              <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-violet-400 border-t-transparent" />
+              {t('process.toolActivity')}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {TOOLS.map((tool) => (
+                <div
+                  key={tool.key}
+                  className="flex items-center gap-2 rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2 text-xs text-neutral-600"
+                >
+                  <img src={tool.icon} alt="" className="h-4 w-4" loading="lazy" />
+                  <span className="truncate">{t(`process.${tool.key}`)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
+
+        {/* 数据可视化（由模拟动作日志派生） */}
+        {!generating && (
+          <div className="mb-4">
+            <div className="mb-2 text-sm font-semibold text-neutral-700">{t('process.dataViz')}</div>
+            <ReportCharts actions={actions} />
+          </div>
+        )}
+
+        {/* 真实 ReACT 工具调用轨迹 */}
+        {!generating && toolTrace.length > 0 && (
+          <div className="mb-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+            <div className="mb-3 text-sm font-semibold text-neutral-700">{t('process.toolTrace')}</div>
+            <div className="space-y-2">
+              {toolTrace.map((tc, i) => {
+                const meta = TOOL_META[tc.tool] || { color: '#94a3b8' }
+                return (
+                  <div key={i} className="flex items-start gap-2 rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2 text-xs">
+                    <span className="mt-1 inline-block h-2 w-2 shrink-0 rounded-full" style={{ background: meta.color }} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium text-neutral-800">
+                          {meta.key ? t(`process.${meta.key}`) : tc.tool}
+                        </span>
+                        {typeof tc.hits === 'number' && (
+                          <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] text-neutral-500">
+                            {tc.hits} hits
+                          </span>
+                        )}
+                      </div>
+                      {tc.query && (
+                        <div className="truncate text-neutral-500" title={tc.query}>{tc.query}</div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="rounded-2xl border border-sky-200 bg-sky-50/60 p-5">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-sky-900">Panorama Search</h3>

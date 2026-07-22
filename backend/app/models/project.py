@@ -21,11 +21,13 @@ class Project(BaseModel):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex)
     name: str = ""
     requirement: str = ""  # 预测需求描述
-    file_name: Optional[str] = None  # 上传的种子文件名
+    file_name: Optional[str] = None  # 上传的种子文件名（首个，向后兼容）
+    file_names: list[str] = Field(default_factory=list)  # 全部上传的种子文件名
     # 状态：created -> ontology_ready -> building -> graph_ready -> ...
     status: str = "created"
     graph_id: Optional[str] = None  # Zep 图谱 ID
     ontology: Optional[dict] = None  # 本体定义 { entity_types, edge_types }
+    analysis_summary: Optional[str] = None  # LLM 本体分析摘要
     created_at: float = Field(default_factory=time.time)
     updated_at: float = Field(default_factory=time.time)
 

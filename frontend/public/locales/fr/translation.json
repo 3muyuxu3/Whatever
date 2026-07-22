@@ -101,5 +101,10 @@
         "step4": "Rapport",
         "step5": "Interaction"
     },
+    "reports": {
+        "title": "Rapports de prédiction",
+        "subtitle": "Revisitez les rapports de prédiction que vous avez générés",
+        "empty": "Aucun rapport pour l'instant — lancez une simulation pour en générer un."
+    },
     "language": "Langue"
 }

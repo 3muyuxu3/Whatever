@@ -101,5 +101,10 @@
         "step4": "Bericht",
         "step5": "Interaktion"
     },
+    "reports": {
+        "title": "Prognoseberichte",
+        "subtitle": "Sehen Sie sich Ihre erstellten Prognoseberichte an",
+        "empty": "Noch keine Berichte — führen Sie eine Simulation aus, um einen zu erstellen."
+    },
     "language": "Sprache"
 }

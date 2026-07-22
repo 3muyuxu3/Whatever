@@ -2,14 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { generateReport, getReport, getReportStatus } from '../api/report'
-import { getSimulationStatus } from '../api/simulation'
+import { getActions, getSimulationStatus } from '../api/simulation'
 import { useGraphData } from '../hooks/useGraphData'
 import ProcessLayout from '../components/ProcessLayout'
 import GraphPanel from '../components/GraphPanel'
 import Step4Report from '../components/Step4Report'
 
-// 报告章节骨架（生成中展示）
-const OUTLINE = ['背景与概述', '关键实体与关系', '群体舆论演化', '风险与机会', '未来走向预测']
+// 报告章节骨架（生成中展示，从 i18n 读取）
+const FALLBACK_OUTLINE = ['背景与概述', '关键实体与关系', '群体舆论演化', '风险与机会', '未来走向预测']
 
 /**
  * ReportView —— 流程页 Step 4（报告生成）
@@ -21,10 +21,16 @@ export default function ReportView() {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
+  // 报告章节骨架（优先使用当前语言的本地化大纲）
+  const outline = t('process.defaultOutline', { returnObjects: true })
+  const OUTLINE = Array.isArray(outline) ? outline : FALLBACK_OUTLINE
+
   const [content, setContent] = useState('')
   const [generating, setGenerating] = useState(false)
   const [reportId, setReportId] = useState(null)
   const [sim, setSim] = useState({})
+  const [actions, setActions] = useState([])
+  const [toolTrace, setToolTrace] = useState([])
   const [logs, setLogs] = useState([])
   const startedRef = useRef(false)
 
@@ -38,10 +44,13 @@ export default function ReportView() {
   const pushLog = (text, level) =>
     setLogs((l) => [...l.slice(-80), { time: new Date().toLocaleTimeString(), level, text }])
 
-  // 获取模拟信息（graph_id / requirement）
+  // 获取模拟信息（graph_id / requirement）与动作日志（用于可视化）
   useEffect(() => {
     getSimulationStatus({ simulation_id: simulationId })
       .then((res) => setSim(res.data || {}))
+      .catch(() => { })
+    getActions({ simulation_id: simulationId })
+      .then((res) => setActions(res.data?.actions || []))
       .catch(() => { })
   }, [simulationId])
 
@@ -65,6 +74,11 @@ export default function ReportView() {
                 clearInterval(timer)
                 const rep = await getReport(rid)
                 setContent(rep.data?.content || rep.data?.markdown || '')
+                setToolTrace(rep.data?.tool_trace || [])
+                try {
+                  const ac = await getActions({ simulation_id: simulationId })
+                  setActions(ac.data?.actions || [])
+                } catch (e) { /* 忽略 */ }
                 setGenerating(false)
                 pushLog('报告生成完成')
               } else if (st.data?.status === 'failed') {
@@ -98,7 +112,7 @@ export default function ReportView() {
       stepName={t('steps.step4')}
       status={status}
       defaultView="workbench"
-      primary={<GraphPanel data={graphData} onRefresh={refresh} />}
+      primary={<GraphPanel data={graphData} graphId={graphId} onRefresh={refresh} />}
       secondary={
         <Step4Report
           reportId={reportId}
@@ -107,6 +121,8 @@ export default function ReportView() {
           outline={OUTLINE}
           stats={stats}
           requirement={sim?.requirement}
+          actions={actions}
+          toolTrace={toolTrace}
           onInteract={reportId ? goInteract : undefined}
         />
       }

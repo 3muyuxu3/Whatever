@@ -98,12 +98,43 @@ def _handle_interviews(work_dir: str, agents_by_name: dict, llm) -> None:
         else:
             answer = f"作为 {agent_id}，我对「{question}」的看法是：这值得持续关注。"
         with open(os.path.join(ipc, f"resp_{req['id']}.json"), "w", encoding="utf-8") as f:
-            json.dump({"id": req["id"], "answer": answer, "ts": time.time()}, f, ensure_ascii=False)
+            json.dump({"id": req["id"], "answer": answer,
+                      "ts": time.time()}, f, ensure_ascii=False)
         os.remove(req_path)
 
 
+def _poll_injections(work_dir: str) -> list:
+    """读取并消费「上帝视角」注入目录中的新事件 / 变量。
+
+    与主进程侧 simulation_ipc.write_injection 对应；读取后删除文件，确保每条注入
+    只被应用一次。
+    """
+    d = os.path.join(work_dir, "injections")
+    if not os.path.isdir(d):
+        return []
+    items = []
+    for name in sorted(os.listdir(d)):
+        if not (name.startswith("inj_") and name.endswith(".json")):
+            continue
+        p = os.path.join(d, name)
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                items.append(json.load(f))
+        except Exception:  # noqa: BLE001
+            continue
+        try:
+            os.remove(p)  # 消费后删除，避免重复注入
+        except Exception:  # noqa: BLE001
+            pass
+    return items
+
+
 def run_mock_simulation(platforms: list[str], sim_id: str, cfg: dict, work_dir: str) -> None:
-    """降级模拟循环：按活跃度曲线为各平台 Agent 生成动作并记录。"""
+    """降级模拟循环：按活跃度曲线为各平台 Agent 生成动作并记录。
+
+    支持「上帝视角」动态注入：每轮开始时消费注入目录中的新事件 / 变量，
+    将其作为新的种子话题注入后续社会演化。
+    """
     logger = ActionLogger(os.path.join(work_dir, "actions.jsonl"))
     llm = _maybe_llm()
 
@@ -119,12 +150,28 @@ def run_mock_simulation(platforms: list[str], sim_id: str, cfg: dict, work_dir: 
         agents[p] = [{"id": str(a), "name": str(a)} for a in ids]
     agents_by_name = {a["name"]: a for p in platforms for a in agents[p]}
 
+    # 话题池：由初始种子事件填充，可被「上帝视角」注入动态扩展
+    topics = [e.get("content", "")
+              for e in (cfg.get("events") or []) if e.get("content")]
+    if not topics:
+        topics = ["公共议题"]
+
     # 初始种子帖子
     for event in cfg.get("events", []) or []:
         logger.log(round=0, platform=platforms[0], agent_id="seed",
                    agent_name="seed", action="CREATE_POST", content=event.get("content", ""))
 
     for rnd in range(max_rounds):
+        # 上帝视角：消费本轮新注入的事件 / 变量
+        for inj in _poll_injections(work_dir):
+            c = (inj.get("content") or "").strip()
+            if not c:
+                continue
+            topics.append(c)
+            plat = inj.get("platform") or platforms[0]
+            logger.log(round=rnd, platform=plat, agent_id="godview",
+                       agent_name="God View", action="INJECT", content=c)
+
         hour = (19 + rnd) % 24  # 从晚高峰开始推进
         activity = curve[hour % len(curve)]
         for platform in platforms:
@@ -139,7 +186,7 @@ def run_mock_simulation(platforms: list[str], sim_id: str, cfg: dict, work_dir: 
                         try:
                             content = llm(
                                 f"用一句话，以 {agent['name']} 的口吻，就以下话题发表社交媒体观点："
-                                f"{(cfg.get('events') or [{}])[0].get('content', '公共议题')}"
+                                f"{topics[-1]}"
                             )
                         except Exception:  # noqa: BLE001
                             content = "对此我有一些想法。"

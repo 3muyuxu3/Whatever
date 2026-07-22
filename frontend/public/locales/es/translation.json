@@ -101,5 +101,10 @@
         "step4": "Informe",
         "step5": "Interacción"
     },
+    "reports": {
+        "title": "Informes de predicción",
+        "subtitle": "Revisa los informes de predicción que has generado",
+        "empty": "Aún no hay informes: ejecuta una simulación para generar uno."
+    },
     "language": "Idioma"
 }
