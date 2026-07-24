@@ -1,15 +1,22 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { useGSAP } from '@gsap/react'
 import FadeIn from '../components/FadeIn'
 import AnimatedHeading from '../components/AnimatedHeading'
 import LanguageSwitcher from '../components/LanguageSwitcher'
 import HistoryDatabase from '../components/HistoryDatabase'
 import ReportHistory from '../components/ReportHistory'
 import PeepsCrowd from '../components/PeepsCrowd'
+import CapabilityCarousel from '../components/CapabilityCarousel'
 import { useUpload } from '../store/UploadContext'
 import { generateOntology } from '../api/graph'
 import { GITHUB_URL, ICON_GITHUB } from '../constants'
+
+// 注册 GSAP 插件：useGSAP 负责组件卸载时自动清理，ScrollTrigger 负责滚动进入视口时触发动效
+gsap.registerPlugin(useGSAP, ScrollTrigger)
 
 // 能力卡片配置：标题/描述使用 i18n key，图标来自 icons8
 const CAPABILITIES = [
@@ -33,6 +40,7 @@ export default function Home() {
     const navigate = useNavigate()
     const { files, setFiles, requirement, setRequirement } = useUpload()
     const fileInputRef = useRef(null)
+    const rootRef = useRef(null)
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState('')
     const [dragOver, setDragOver] = useState(false)
@@ -87,8 +95,96 @@ export default function Home() {
         }
     }
 
+    // ===== GSAP 滚动入场动效（能力介绍 / 工作流程两个区块）=====
+    // 使用 useGSAP：组件卸载或依赖变化时自动 revert，避免动画泄漏到已卸载节点；
+    // 通过 matchMedia 尊重系统「减少动画」偏好；卡片错落浮现 + 悬停轻微上浮，营造舒适的层次感。
+    useGSAP(() => {
+        const mm = gsap.matchMedia()
+
+        mm.add(
+            {
+                reduce: '(prefers-reduced-motion: reduce)',
+                motionOk: '(prefers-reduced-motion: no-preference)',
+            },
+            (context) => {
+                // 尊重「减少动画」偏好：保持元素默认可见，不做位移 / 缩放动效
+                if (context.conditions.reduce) return
+
+                // —— 能力介绍：标题与副标题淡入上浮 ——
+                gsap.from(['.caps-title', '.caps-subtitle'], {
+                    y: 32,
+                    autoAlpha: 0,
+                    duration: 0.9,
+                    ease: 'power3.out',
+                    stagger: 0.12,
+                    scrollTrigger: { trigger: '#capabilities', start: 'top 78%', once: true },
+                })
+
+                // 能力卡片改为「3D 覆盖流轮播」，其入场与切换动效由 CapabilityCarousel 自行管理
+
+                // —— 工作流程：标题 + 五步卡片 + 大序号 ——
+                gsap.from('.flow-title', {
+                    y: 32,
+                    autoAlpha: 0,
+                    duration: 0.9,
+                    ease: 'power3.out',
+                    scrollTrigger: { trigger: '#workflow', start: 'top 80%', once: true },
+                })
+
+                gsap.from('.flow-card', {
+                    y: 60,
+                    autoAlpha: 0,
+                    duration: 0.8,
+                    ease: 'power3.out',
+                    stagger: 0.12,
+                    clearProps: 'transform',
+                    scrollTrigger: { trigger: '.flow-grid', start: 'top 82%', once: true },
+                })
+
+                // 大序号：在卡片浮现后再缓缓升起，形成前后层次
+                gsap.from('.flow-num', {
+                    yPercent: 45,
+                    autoAlpha: 0,
+                    duration: 0.9,
+                    ease: 'power2.out',
+                    stagger: 0.12,
+                    delay: 0.15,
+                    scrollTrigger: { trigger: '.flow-grid', start: 'top 82%', once: true },
+                })
+
+                // —— 工作流程卡片悬停微交互：轻微上浮 + 投影；移出时平滑回落 ——
+                const cards = gsap.utils.toArray('.flow-card', rootRef.current)
+                const shadowRest = 'inset 0 1px 1px rgba(255,255,255,0.1)'
+                const shadowHover =
+                    'inset 0 1px 1px rgba(255,255,255,0.1), 0 18px 40px -14px rgba(0,0,0,0.65)'
+                const bound = []
+                cards.forEach((card) => {
+                    const onEnter = () =>
+                        gsap.to(card, { y: -8, boxShadow: shadowHover, duration: 0.35, ease: 'power2.out', overwrite: 'auto' })
+                    const onLeave = () =>
+                        gsap.to(card, { y: 0, boxShadow: shadowRest, duration: 0.45, ease: 'power2.out', overwrite: 'auto' })
+                    card.addEventListener('mouseenter', onEnter)
+                    card.addEventListener('mouseleave', onLeave)
+                    bound.push([card, onEnter, onLeave])
+                })
+
+                // 媒体条件失配 / 组件卸载时：移除监听并杀掉悬停补间，避免泄漏
+                return () => {
+                    bound.forEach(([card, onEnter, onLeave]) => {
+                        card.removeEventListener('mouseenter', onEnter)
+                        card.removeEventListener('mouseleave', onLeave)
+                    })
+                    gsap.killTweensOf(cards)
+                }
+            },
+            rootRef.current,
+        )
+
+        return () => mm.revert()
+    }, { scope: rootRef })
+
     return (
-        <div className="relative w-full bg-black text-white">
+        <div ref={rootRef} className="relative w-full bg-black text-white">
             {/* ============ Hero 区（全屏视频背景） ============ */}
             <section className="relative h-screen w-full overflow-hidden">
                 {/* 背景视频：铺满视口，object-cover，自动播放/循环/静音/内联播放，无任何遮罩层 */}
@@ -281,35 +377,23 @@ export default function Home() {
 
             {/* ============ 能力介绍 ============ */}
             <section id="capabilities" className="mx-auto max-w-7xl px-6 py-24 md:px-12 lg:px-16">
-                <h2 className="mb-3 text-3xl font-normal md:text-4xl" style={{ letterSpacing: '-0.03em' }}>
+                <h2 className="caps-title mb-3 text-3xl font-normal md:text-4xl" style={{ letterSpacing: '-0.03em' }}>
                     {t('capabilities.title')}
                 </h2>
-                <p className="mb-12 max-w-2xl text-gray-400">{t('capabilities.subtitle')}</p>
+                <p className="caps-subtitle mb-12 max-w-2xl text-gray-400">{t('capabilities.subtitle')}</p>
 
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {CAPABILITIES.map((cap) => (
-                        <div key={cap.key} className="liquid-glass rounded-xl p-6">
-                            <img src={cap.icon} alt="" className="mb-4 h-9 w-9 opacity-90" loading="lazy" />
-                            <h3 className="mb-2 text-lg font-medium">
-                                {t(`capabilities.${cap.key}.title`)}
-                            </h3>
-                            <p className="text-sm leading-relaxed text-gray-400">
-                                {t(`capabilities.${cap.key}.desc`)}
-                            </p>
-                        </div>
-                    ))}
-                </div>
+                <CapabilityCarousel items={CAPABILITIES} />
             </section>
 
             {/* ============ 工作流程 ============ */}
             <section id="workflow" className="mx-auto max-w-7xl px-6 py-24 md:px-12 lg:px-16">
-                <h2 className="mb-12 text-3xl font-normal md:text-4xl" style={{ letterSpacing: '-0.03em' }}>
+                <h2 className="flow-title mb-12 text-3xl font-normal md:text-4xl" style={{ letterSpacing: '-0.03em' }}>
                     {t('workflow.title')}
                 </h2>
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
+                <div className="flow-grid grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
                     {WORKFLOW_STEPS.map((step, idx) => (
-                        <div key={step} className="liquid-glass rounded-xl p-6">
-                            <div className="mb-4 text-3xl font-light text-white/60">
+                        <div key={step} className="flow-card liquid-glass rounded-xl p-6">
+                            <div className="flow-num mb-4 text-3xl font-light text-white/60">
                                 {String(idx + 1).padStart(2, '0')}
                             </div>
                             <h3 className="mb-2 text-lg font-medium">
