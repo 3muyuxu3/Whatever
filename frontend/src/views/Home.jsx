@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { lazy, Suspense, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import gsap from 'gsap'
@@ -11,6 +11,8 @@ import HistoryDatabase from '../components/HistoryDatabase'
 import ReportHistory from '../components/ReportHistory'
 import PeepsCrowd from '../components/PeepsCrowd'
 import CapabilityCarousel from '../components/CapabilityCarousel'
+// 巨型品牌字位于首屏之外且依赖 three.js，故按需懒加载，避免阻塞首屏交互
+const GiantWordmark = lazy(() => import('../components/GiantWordmark'))
 import { useUpload } from '../store/UploadContext'
 import { generateOntology } from '../api/graph'
 import { GITHUB_URL, ICON_GITHUB } from '../constants'
@@ -184,359 +186,375 @@ export default function Home() {
     }, { scope: rootRef })
 
     return (
-        <div ref={rootRef} className="relative w-full bg-black text-white">
-            {/* ============ Hero 区（全屏视频背景） ============ */}
-            <section className="relative h-screen w-full overflow-hidden">
-                {/* 背景视频：铺满视口，object-cover，自动播放/循环/静音/内联播放，无任何遮罩层 */}
-                <video
-                    className="absolute inset-0 h-full w-full object-cover"
-                    src="/home.mp4"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload="auto"
-                />
+        <>
+            {/* 底层固定巨字：置于视口最底层，被上层不透明内容遮挡，向下滚动到页面底部时逐渐显露 */}
+            <div className="fixed inset-x-0 bottom-0 z-0">
+                {/* 懒加载时以同尺寸白色占位块占位，避免布局抖动 */}
+                <Suspense
+                    fallback={<div className="w-full" style={{ height: 'clamp(120px, 20vw, 320px)', backgroundColor: '#ffffff' }} />}
+                >
+                    <GiantWordmark word="MUYU" color="#ffffff" />
+                </Suspense>
+            </div>
 
-                {/* 底部行走的人群（下滑时淡出消失） */}
-                <PeepsCrowd />
+            {/* 上层内容：不透明黑底 + 更高层级，滚动时遮住下方的底层巨字 */}
+            <div ref={rootRef} className="relative z-10 w-full bg-black text-white">
+                {/* ============ Hero 区（全屏视频背景） ============ */}
+                <section className="relative h-screen w-full overflow-hidden">
+                    {/* 背景视频：铺满视口，object-cover，自动播放/循环/静音/内联播放，无任何遮罩层 */}
+                    <video
+                        className="absolute inset-0 h-full w-full object-cover"
+                        src="/home.mp4"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        preload="auto"
+                    />
 
-                {/* 前景内容：导航栏 + Hero 文案，位于视频之上 */}
-                <div className="relative z-10 flex h-full flex-col">
-                    {/* ---- 导航栏 ---- */}
-                    <div className="px-6 pt-6 md:px-12 lg:px-16">
-                        <nav className="liquid-glass flex items-center justify-between overflow-visible rounded-xl px-4 py-2">
-                            {/* 左：Logo */}
-                            <button
-                                type="button"
-                                onClick={() => scrollTo('top')}
-                                className="text-xl font-semibold tracking-tight md:text-2xl"
-                            >
-                                SimulMirror
-                            </button>
+                    {/* 底部行走的人群（下滑时淡出消失） */}
+                    <PeepsCrowd />
 
-                            {/* 中：导航链接（移动端隐藏） */}
-                            <div className="hidden items-center gap-8 text-sm md:flex">
+                    {/* 前景内容：导航栏 + Hero 文案，位于视频之上 */}
+                    <div className="relative z-10 flex h-full flex-col">
+                        {/* ---- 导航栏 ---- */}
+                        <div className="px-6 pt-6 md:px-12 lg:px-16">
+                            <nav className="liquid-glass flex items-center justify-between overflow-visible rounded-xl px-4 py-2">
+                                {/* 左：Logo */}
                                 <button
                                     type="button"
-                                    onClick={() => scrollTo('capabilities')}
-                                    className="transition hover:text-gray-300"
+                                    onClick={() => scrollTo('top')}
+                                    className="text-xl font-semibold tracking-tight md:text-2xl"
                                 >
-                                    {t('nav.capabilities')}
+                                    SimulMirror
                                 </button>
-                                <button
-                                    type="button"
-                                    onClick={() => scrollTo('workflow')}
-                                    className="transition hover:text-gray-300"
-                                >
-                                    {t('nav.workflow')}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => scrollTo('start')}
-                                    className="transition hover:text-gray-300"
-                                >
-                                    {t('nav.vision')}
-                                </button>
-                                <a
-                                    href={GITHUB_URL}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="transition hover:text-gray-300"
-                                >
-                                    {t('nav.docs')}
-                                </a>
-                            </div>
 
-                            {/* 右：语言切换 + GitHub 入口 + 主按钮 */}
-                            <div className="flex items-center gap-3">
-                                {/* 移动端菜单按钮 */}
-                                <button
-                                    type="button"
-                                    onClick={() => setMobileOpen((v) => !v)}
-                                    aria-label="Menu"
-                                    className="flex h-9 w-9 items-center justify-center rounded-lg text-white transition hover:bg-white/10 md:hidden"
-                                >
-                                    <span className="text-xl leading-none">☰</span>
-                                </button>
-                                <LanguageSwitcher className="hidden sm:block" />
-                                {/* GitHub 入口（图标来自 icons8） */}
-                                <a
-                                    href={GITHUB_URL}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    aria-label="GitHub"
-                                    className="flex h-9 w-9 items-center justify-center rounded-lg transition hover:bg-white/10"
-                                >
-                                    <img
-                                        src={ICON_GITHUB}
-                                        alt="GitHub"
-                                        className="h-5 w-5"
-                                        loading="lazy"
+                                {/* 中：导航链接（移动端隐藏） */}
+                                <div className="hidden items-center gap-8 text-sm md:flex">
+                                    <button
+                                        type="button"
+                                        onClick={() => scrollTo('capabilities')}
+                                        className="transition hover:text-gray-300"
+                                    >
+                                        {t('nav.capabilities')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => scrollTo('workflow')}
+                                        className="transition hover:text-gray-300"
+                                    >
+                                        {t('nav.workflow')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => scrollTo('start')}
+                                        className="transition hover:text-gray-300"
+                                    >
+                                        {t('nav.vision')}
+                                    </button>
+                                    <a
+                                        href={GITHUB_URL}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="transition hover:text-gray-300"
+                                    >
+                                        {t('nav.docs')}
+                                    </a>
+                                </div>
+
+                                {/* 右：语言切换 + GitHub 入口 + 主按钮 */}
+                                <div className="flex items-center gap-3">
+                                    {/* 移动端菜单按钮 */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setMobileOpen((v) => !v)}
+                                        aria-label="Menu"
+                                        className="flex h-9 w-9 items-center justify-center rounded-lg text-white transition hover:bg-white/10 md:hidden"
+                                    >
+                                        <span className="text-xl leading-none">☰</span>
+                                    </button>
+                                    <LanguageSwitcher className="hidden sm:block" />
+                                    {/* GitHub 入口（图标来自 icons8） */}
+                                    <a
+                                        href={GITHUB_URL}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        aria-label="GitHub"
+                                        className="flex h-9 w-9 items-center justify-center rounded-lg transition hover:bg-white/10"
+                                    >
+                                        <img
+                                            src={ICON_GITHUB}
+                                            alt="GitHub"
+                                            className="h-5 w-5"
+                                            loading="lazy"
+                                        />
+                                    </a>
+                                    <button
+                                        type="button"
+                                        onClick={() => scrollTo('start')}
+                                        className="rounded-lg bg-white px-6 py-2 text-sm font-medium text-black transition hover:bg-gray-100"
+                                    >
+                                        {t('nav.start')}
+                                    </button>
+                                </div>
+                            </nav>
+
+                            {/* 移动端下拉菜单 */}
+                            {mobileOpen && (
+                                <div className="liquid-glass mt-2 flex flex-col gap-1 rounded-xl p-2 text-sm md:hidden">
+                                    {[
+                                        ['capabilities', 'nav.capabilities'],
+                                        ['workflow', 'nav.workflow'],
+                                        ['start', 'nav.vision'],
+                                    ].map(([id, key]) => (
+                                        <button
+                                            key={key}
+                                            type="button"
+                                            onClick={() => { scrollTo(id); setMobileOpen(false) }}
+                                            className="rounded-lg px-4 py-2 text-left text-white transition hover:bg-white/10"
+                                        >
+                                            {t(key)}
+                                        </button>
+                                    ))}
+                                    <a
+                                        href={GITHUB_URL}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="rounded-lg px-4 py-2 text-white transition hover:bg-white/10"
+                                    >
+                                        {t('nav.docs')}
+                                    </a>
+                                    <div className="px-2 py-1">
+                                        <LanguageSwitcher />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* ---- Hero 文案（贴视口底部） ---- */}
+                        <div className="flex flex-1 flex-col justify-end px-6 pb-[40vh] md:px-12 lg:px-16">
+                            <div className="lg:grid lg:grid-cols-2 lg:items-end">
+                                {/* 左列：主标题 + 副标题 + 按钮 */}
+                                <div>
+                                    <AnimatedHeading
+                                        text={t('hero.heading')}
+                                        className="mb-4 text-4xl font-normal md:text-5xl lg:text-6xl xl:text-7xl"
+                                        style={{ letterSpacing: '-0.04em', textShadow: '0 2px 24px rgba(0,0,0,0.25)' }}
                                     />
-                                </a>
-                                <button
-                                    type="button"
-                                    onClick={() => scrollTo('start')}
-                                    className="rounded-lg bg-white px-6 py-2 text-sm font-medium text-black transition hover:bg-gray-100"
-                                >
-                                    {t('nav.start')}
-                                </button>
-                            </div>
-                        </nav>
 
-                        {/* 移动端下拉菜单 */}
-                        {mobileOpen && (
-                            <div className="liquid-glass mt-2 flex flex-col gap-1 rounded-xl p-2 text-sm md:hidden">
-                                {[
-                                    ['capabilities', 'nav.capabilities'],
-                                    ['workflow', 'nav.workflow'],
-                                    ['start', 'nav.vision'],
-                                ].map(([id, key]) => (
-                                    <button
-                                        key={key}
-                                        type="button"
-                                        onClick={() => { scrollTo(id); setMobileOpen(false) }}
-                                        className="rounded-lg px-4 py-2 text-left text-white transition hover:bg-white/10"
-                                    >
-                                        {t(key)}
-                                    </button>
-                                ))}
-                                <a
-                                    href={GITHUB_URL}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="rounded-lg px-4 py-2 text-white transition hover:bg-white/10"
-                                >
-                                    {t('nav.docs')}
-                                </a>
-                                <div className="px-2 py-1">
-                                    <LanguageSwitcher />
+                                    <FadeIn delay={800} duration={1000}>
+                                        <p
+                                            className="mb-5 max-w-xl text-base text-gray-300 md:text-lg"
+                                            style={{ textShadow: '0 1px 12px rgba(0,0,0,0.3)' }}
+                                        >
+                                            {t('hero.subheading')}
+                                        </p>
+                                    </FadeIn>
+
+                                    <FadeIn delay={1200} duration={1000}>
+                                        <div className="flex flex-wrap gap-4">
+                                            <button
+                                                type="button"
+                                                onClick={() => scrollTo('start')}
+                                                className="rounded-lg bg-white px-8 py-3 font-medium text-black transition hover:bg-gray-100"
+                                            >
+                                                {t('hero.start')}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => scrollTo('capabilities')}
+                                                className="liquid-glass rounded-lg border border-white/20 px-8 py-3 font-medium text-white transition hover:bg-white hover:text-black"
+                                            >
+                                                {t('hero.explore')}
+                                            </button>
+                                        </div>
+                                    </FadeIn>
+                                </div>
+
+                                {/* 右列：标语玻璃卡片（大屏靠右下对齐） */}
+                                <div className="mt-8 flex items-end justify-start lg:mt-0 lg:justify-end">
+                                    <FadeIn delay={1400} duration={1000}>
+                                        <div className="liquid-glass rounded-xl border border-white/20 px-6 py-3">
+                                            <span className="text-lg font-light md:text-xl lg:text-2xl">
+                                                {t('hero.tag')}
+                                            </span>
+                                        </div>
+                                    </FadeIn>
                                 </div>
                             </div>
-                        )}
-                    </div>
-
-                    {/* ---- Hero 文案（贴视口底部） ---- */}
-                    <div className="flex flex-1 flex-col justify-end px-6 pb-[40vh] md:px-12 lg:px-16">
-                        <div className="lg:grid lg:grid-cols-2 lg:items-end">
-                            {/* 左列：主标题 + 副标题 + 按钮 */}
-                            <div>
-                                <AnimatedHeading
-                                    text={t('hero.heading')}
-                                    className="mb-4 text-4xl font-normal md:text-5xl lg:text-6xl xl:text-7xl"
-                                    style={{ letterSpacing: '-0.04em', textShadow: '0 2px 24px rgba(0,0,0,0.25)' }}
-                                />
-
-                                <FadeIn delay={800} duration={1000}>
-                                    <p
-                                        className="mb-5 max-w-xl text-base text-gray-300 md:text-lg"
-                                        style={{ textShadow: '0 1px 12px rgba(0,0,0,0.3)' }}
-                                    >
-                                        {t('hero.subheading')}
-                                    </p>
-                                </FadeIn>
-
-                                <FadeIn delay={1200} duration={1000}>
-                                    <div className="flex flex-wrap gap-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => scrollTo('start')}
-                                            className="rounded-lg bg-white px-8 py-3 font-medium text-black transition hover:bg-gray-100"
-                                        >
-                                            {t('hero.start')}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => scrollTo('capabilities')}
-                                            className="liquid-glass rounded-lg border border-white/20 px-8 py-3 font-medium text-white transition hover:bg-white hover:text-black"
-                                        >
-                                            {t('hero.explore')}
-                                        </button>
-                                    </div>
-                                </FadeIn>
-                            </div>
-
-                            {/* 右列：标语玻璃卡片（大屏靠右下对齐） */}
-                            <div className="mt-8 flex items-end justify-start lg:mt-0 lg:justify-end">
-                                <FadeIn delay={1400} duration={1000}>
-                                    <div className="liquid-glass rounded-xl border border-white/20 px-6 py-3">
-                                        <span className="text-lg font-light md:text-xl lg:text-2xl">
-                                            {t('hero.tag')}
-                                        </span>
-                                    </div>
-                                </FadeIn>
-                            </div>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* 页面顶部锚点 */}
-            <span id="top" className="sr-only" />
+                {/* 页面顶部锚点 */}
+                <span id="top" className="sr-only" />
 
-            {/* ============ 能力介绍 ============ */}
-            <section id="capabilities" className="mx-auto max-w-7xl px-6 py-24 md:px-12 lg:px-16">
-                <h2 className="caps-title mb-3 text-3xl font-normal md:text-4xl" style={{ letterSpacing: '-0.03em' }}>
-                    {t('capabilities.title')}
-                </h2>
-                <p className="caps-subtitle mb-12 max-w-2xl text-gray-400">{t('capabilities.subtitle')}</p>
+                {/* ============ 能力介绍 ============ */}
+                <section id="capabilities" className="mx-auto max-w-7xl px-6 py-24 md:px-12 lg:px-16">
+                    <h2 className="caps-title mb-3 text-3xl font-normal md:text-4xl" style={{ letterSpacing: '-0.03em' }}>
+                        {t('capabilities.title')}
+                    </h2>
+                    <p className="caps-subtitle mb-12 max-w-2xl text-gray-400">{t('capabilities.subtitle')}</p>
 
-                <CapabilityCarousel items={CAPABILITIES} />
-            </section>
+                    <CapabilityCarousel items={CAPABILITIES} />
+                </section>
 
-            {/* ============ 工作流程 ============ */}
-            <section id="workflow" className="mx-auto max-w-7xl px-6 py-24 md:px-12 lg:px-16">
-                <h2 className="flow-title mb-12 text-3xl font-normal md:text-4xl" style={{ letterSpacing: '-0.03em' }}>
-                    {t('workflow.title')}
-                </h2>
-                <div className="flow-grid grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
-                    {WORKFLOW_STEPS.map((step, idx) => (
-                        <div key={step} className="flow-card liquid-glass rounded-xl p-6">
-                            <div className="flow-num mb-4 text-3xl font-light text-white/60">
-                                {String(idx + 1).padStart(2, '0')}
-                            </div>
-                            <h3 className="mb-2 text-lg font-medium">
-                                {t(`workflow.${step}.title`, { defaultValue: t('steps.step5') })}
-                            </h3>
-                            <p className="text-sm leading-relaxed text-gray-400">
-                                {t(`workflow.${step}.desc`, { defaultValue: t('capabilities.interaction.desc') })}
-                            </p>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            {/* ============ 上传区 + 历史项目 ============ */}
-            <section id="start" className="mx-auto max-w-7xl px-6 py-24 md:px-12 lg:px-16">
-                <h2 className="mb-3 text-3xl font-normal md:text-4xl" style={{ letterSpacing: '-0.03em' }}>
-                    {t('start.title')}
-                </h2>
-                <p className="mb-10 max-w-2xl text-gray-400">{t('start.subtitle')}</p>
-
-                <div className="liquid-glass rounded-2xl p-6 md:p-8">
-                    {/* 文件拖放 / 选择区（支持多文件 + 拖放） */}
-                    <div
-                        onClick={() => fileInputRef.current?.click()}
-                        onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
-                        onDragLeave={() => setDragOver(false)}
-                        onDrop={onDrop}
-                        className={`flex w-full cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-6 py-12 text-center transition ${dragOver ? 'border-white/60 bg-white/5' : 'border-white/20 hover:border-white/40'
-                            }`}
-                    >
-                        <img
-                            src="https://img.icons8.com/ios/100/ffffff/upload-to-cloud--v1.png"
-                            alt=""
-                            className="mb-4 h-10 w-10 opacity-80"
-                            loading="lazy"
-                        />
-                        <span className="text-white">{t('start.dropHint')}</span>
-                        <span className="mt-2 text-xs text-gray-500">{t('start.fileTypes')}</span>
-                    </div>
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".pdf,.txt,.md"
-                        multiple
-                        className="hidden"
-                        onChange={onSelectFile}
-                    />
-
-                    {/* 已选择文件列表 */}
-                    {files.length > 0 && (
-                        <div className="mt-4 space-y-2">
-                            <div className="text-xs text-gray-400">
-                                {t('start.selectedFile')} ({files.length})
-                            </div>
-                            {files.map((f, i) => (
-                                <div
-                                    key={`${f.name}-${i}`}
-                                    className="flex items-center justify-between rounded-lg border border-white/10 bg-black/30 px-4 py-2 text-sm"
-                                >
-                                    <span className="truncate text-gray-200">{f.name}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => removeFile(i)}
-                                        className="ml-3 shrink-0 text-gray-500 transition hover:text-white"
-                                        aria-label="remove"
-                                    >
-                                        ✕
-                                    </button>
+                {/* ============ 工作流程 ============ */}
+                <section id="workflow" className="mx-auto max-w-7xl px-6 py-24 md:px-12 lg:px-16">
+                    <h2 className="flow-title mb-12 text-3xl font-normal md:text-4xl" style={{ letterSpacing: '-0.03em' }}>
+                        {t('workflow.title')}
+                    </h2>
+                    <div className="flow-grid grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
+                        {WORKFLOW_STEPS.map((step, idx) => (
+                            <div key={step} className="flow-card liquid-glass rounded-xl p-6">
+                                <div className="flow-num mb-4 text-3xl font-light text-white/60">
+                                    {String(idx + 1).padStart(2, '0')}
                                 </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* 预测需求 */}
-                    <label className="mb-2 mt-6 block text-sm text-gray-300">
-                        {t('start.requirementLabel')}
-                    </label>
-                    <textarea
-                        value={requirement}
-                        onChange={(e) => setRequirement(e.target.value)}
-                        rows={3}
-                        placeholder={t('start.requirementPlaceholder')}
-                        className="w-full resize-none rounded-xl border border-white/15 bg-black/40 px-4 py-3 text-white outline-none transition placeholder:text-gray-500 focus:border-white/40"
-                    />
-
-                    {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
-
-                    {/* 提交按钮 */}
-                    <div className="mt-6">
-                        <button
-                            type="button"
-                            onClick={handleBuild}
-                            disabled={!files.length || submitting}
-                            className="rounded-lg bg-white px-8 py-3 font-medium text-black transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                            {submitting ? t('start.building') : t('start.button')}
-                        </button>
+                                <h3 className="mb-2 text-lg font-medium">
+                                    {t(`workflow.${step}.title`, { defaultValue: t('steps.step5') })}
+                                </h3>
+                                <p className="text-sm leading-relaxed text-gray-400">
+                                    {t(`workflow.${step}.desc`, { defaultValue: t('capabilities.interaction.desc') })}
+                                </p>
+                            </div>
+                        ))}
                     </div>
-                </div>
+                </section>
 
-                {/* 历史项目 */}
-                <div className="mt-16">
-                    <h3 className="mb-2 text-2xl font-normal">{t('history.title')}</h3>
-                    <p className="mb-8 text-gray-400">{t('history.subtitle')}</p>
-                    <HistoryDatabase />
-                </div>
+                {/* ============ 上传区 + 历史项目 ============ */}
+                <section id="start" className="mx-auto max-w-7xl px-6 py-24 md:px-12 lg:px-16">
+                    <h2 className="mb-3 text-3xl font-normal md:text-4xl" style={{ letterSpacing: '-0.03em' }}>
+                        {t('start.title')}
+                    </h2>
+                    <p className="mb-10 max-w-2xl text-gray-400">{t('start.subtitle')}</p>
 
-                {/* 历史报告 */}
-                <div className="mt-16">
-                    <h3 className="mb-2 text-2xl font-normal">{t('reports.title')}</h3>
-                    <p className="mb-8 text-gray-400">{t('reports.subtitle')}</p>
-                    <ReportHistory />
-                </div>
-            </section>
-
-            {/* ============ 页脚 ============ */}
-            <footer className="border-t border-white/10 px-6 py-10 md:px-12 lg:px-16">
-                <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
-                    <div>
-                        <div className="text-lg font-semibold tracking-tight">SimulMirror</div>
-                        <div className="text-sm text-gray-500">{t('footer.tagline')}</div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <a
-                            href={GITHUB_URL}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center gap-2 text-sm text-gray-400 transition hover:text-white"
+                    <div className="liquid-glass rounded-2xl p-6 md:p-8">
+                        {/* 文件拖放 / 选择区（支持多文件 + 拖放） */}
+                        <div
+                            onClick={() => fileInputRef.current?.click()}
+                            onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+                            onDragLeave={() => setDragOver(false)}
+                            onDrop={onDrop}
+                            className={`flex w-full cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-6 py-12 text-center transition ${dragOver ? 'border-white/60 bg-white/5' : 'border-white/20 hover:border-white/40'
+                                }`}
                         >
                             <img
-                                src={ICON_GITHUB}
-                                alt="GitHub"
-                                className="h-5 w-5"
+                                src="https://img.icons8.com/ios/100/ffffff/upload-to-cloud--v1.png"
+                                alt=""
+                                className="mb-4 h-10 w-10 opacity-80"
                                 loading="lazy"
                             />
-                            {t('footer.github')}
-                        </a>
+                            <span className="text-white">{t('start.dropHint')}</span>
+                            <span className="mt-2 text-xs text-gray-500">{t('start.fileTypes')}</span>
+                        </div>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".pdf,.txt,.md"
+                            multiple
+                            className="hidden"
+                            onChange={onSelectFile}
+                        />
+
+                        {/* 已选择文件列表 */}
+                        {files.length > 0 && (
+                            <div className="mt-4 space-y-2">
+                                <div className="text-xs text-gray-400">
+                                    {t('start.selectedFile')} ({files.length})
+                                </div>
+                                {files.map((f, i) => (
+                                    <div
+                                        key={`${f.name}-${i}`}
+                                        className="flex items-center justify-between rounded-lg border border-white/10 bg-black/30 px-4 py-2 text-sm"
+                                    >
+                                        <span className="truncate text-gray-200">{f.name}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeFile(i)}
+                                            className="ml-3 shrink-0 text-gray-500 transition hover:text-white"
+                                            aria-label="remove"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* 预测需求 */}
+                        <label className="mb-2 mt-6 block text-sm text-gray-300">
+                            {t('start.requirementLabel')}
+                        </label>
+                        <textarea
+                            value={requirement}
+                            onChange={(e) => setRequirement(e.target.value)}
+                            rows={3}
+                            placeholder={t('start.requirementPlaceholder')}
+                            className="w-full resize-none rounded-xl border border-white/15 bg-black/40 px-4 py-3 text-white outline-none transition placeholder:text-gray-500 focus:border-white/40"
+                        />
+
+                        {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+
+                        {/* 提交按钮 */}
+                        <div className="mt-6">
+                            <button
+                                type="button"
+                                onClick={handleBuild}
+                                disabled={!files.length || submitting}
+                                className="rounded-lg bg-white px-8 py-3 font-medium text-black transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                                {submitting ? t('start.building') : t('start.button')}
+                            </button>
+                        </div>
                     </div>
-                </div>
-                <div className="mx-auto mt-6 max-w-7xl text-center text-xs text-gray-600 sm:text-left">
-                    © {new Date().getFullYear()} {t('footer.rights')}
-                </div>
-            </footer>
-        </div>
+
+                    {/* 历史项目 */}
+                    <div className="mt-16">
+                        <h3 className="mb-2 text-2xl font-normal">{t('history.title')}</h3>
+                        <p className="mb-8 text-gray-400">{t('history.subtitle')}</p>
+                        <HistoryDatabase />
+                    </div>
+
+                    {/* 历史报告 */}
+                    <div className="mt-16">
+                        <h3 className="mb-2 text-2xl font-normal">{t('reports.title')}</h3>
+                        <p className="mb-8 text-gray-400">{t('reports.subtitle')}</p>
+                        <ReportHistory />
+                    </div>
+                </section>
+
+                {/* ============ 页脚 ============ */}
+                <footer className="border-t border-white/10 px-6 py-10 md:px-12 lg:px-16">
+                    <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
+                        <div>
+                            <div className="text-lg font-semibold tracking-tight">SimulMirror</div>
+                            <div className="text-sm text-gray-500">{t('footer.tagline')}</div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <a
+                                href={GITHUB_URL}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex items-center gap-2 text-sm text-gray-400 transition hover:text-white"
+                            >
+                                <img
+                                    src={ICON_GITHUB}
+                                    alt="GitHub"
+                                    className="h-5 w-5"
+                                    loading="lazy"
+                                />
+                                {t('footer.github')}
+                            </a>
+                        </div>
+                    </div>
+                    <div className="mx-auto mt-6 max-w-7xl text-center text-xs text-gray-600 sm:text-left">
+                        © {new Date().getFullYear()} {t('footer.rights')}
+                    </div>
+                </footer>
+            </div>
+
+            {/* 底部间隙：与巨字等高，向下滚动至此逐渐显露被遮挡的底层巨字 */}
+            <div aria-hidden="true" className="w-full" style={{ height: 'clamp(120px, 20vw, 320px)' }} />
+        </>
     )
 }
