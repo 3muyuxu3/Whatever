@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../components/LanguageSwitcher'
+import Logo from '../components/Logo'
 import { GITHUB_URL, ICON_GITHUB } from '../constants'
 
 /**
@@ -108,7 +109,7 @@ export default function DocsView() {
             <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/90 backdrop-blur">
                 <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-6">
                     <Link to="/" className="flex items-center gap-2.5">
-                        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-neutral-900 text-xs font-bold text-white">SM</span>
+                        <Logo className="h-7 w-7 text-neutral-900" />
                         <span className="text-base font-semibold text-neutral-900">{t('pages.docs.brand')}</span>
                     </Link>
                     <div className="flex items-center gap-3">

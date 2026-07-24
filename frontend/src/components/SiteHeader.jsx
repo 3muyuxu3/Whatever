@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from './LanguageSwitcher'
+import Logo from './Logo'
 import { GITHUB_URL, ICON_GITHUB } from '../constants'
 
 // 顶部导航项：能力 / 流程 / 理念 / 文档，分别对应四个独立页面
@@ -30,7 +31,8 @@ export default function SiteHeader() {
             <div className="px-6 pt-4 md:px-10 lg:px-14">
                 <nav className="liquid-glass flex items-center justify-between overflow-visible rounded-xl px-4 py-2.5">
                     {/* 左：Logo → 首页 */}
-                    <Link to="/" className="text-xl font-semibold tracking-tight text-white md:text-2xl">
+                    <Link to="/" className="flex items-center gap-2 text-xl font-semibold tracking-tight text-white md:text-2xl">
+                        <Logo className="h-7 w-7 shrink-0" />
                         SimulMirror
                     </Link>
 

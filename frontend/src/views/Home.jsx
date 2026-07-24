@@ -6,6 +6,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useGSAP } from '@gsap/react'
 import FadeIn from '../components/FadeIn'
 import AnimatedHeading from '../components/AnimatedHeading'
+import Logo from '../components/Logo'
 import LanguageSwitcher from '../components/LanguageSwitcher'
 import HistoryDatabase from '../components/HistoryDatabase'
 import ReportHistory from '../components/ReportHistory'
@@ -224,8 +225,9 @@ export default function Home() {
                                 <button
                                     type="button"
                                     onClick={() => scrollTo('top')}
-                                    className="text-xl font-semibold tracking-tight md:text-2xl"
+                                    className="flex items-center gap-2 text-xl font-semibold tracking-tight md:text-2xl"
                                 >
+                                    <Logo className="h-7 w-7 shrink-0" />
                                     SimulMirror
                                 </button>
 
