@@ -9,9 +9,7 @@ import ReportHistory from '../components/ReportHistory'
 import PeepsCrowd from '../components/PeepsCrowd'
 import { useUpload } from '../store/UploadContext'
 import { generateOntology } from '../api/graph'
-
-// GitHub 仓库入口地址
-const GITHUB_URL = 'https://github.com/3muyuxu3/muyuxu'
+import { GITHUB_URL, ICON_GITHUB } from '../constants'
 
 // 能力卡片配置：标题/描述使用 i18n key，图标来自 icons8
 const CAPABILITIES = [
@@ -22,8 +20,8 @@ const CAPABILITIES = [
     { key: 'interaction', icon: 'https://img.icons8.com/ios/100/ffffff/chat--v1.png' },
 ]
 
-// 工作流程步骤
-const WORKFLOW_STEPS = ['step1', 'step2', 'step3', 'step4']
+// 工作流程步骤（完整 5 步：图谱构建 / 环境搭建 / 模拟运行 / 报告生成 / 深度互动）
+const WORKFLOW_STEPS = ['step1', 'step2', 'step3', 'step4', 'step5']
 
 /**
  * Home —— 首页
@@ -175,7 +173,7 @@ export default function Home() {
                                     className="flex h-9 w-9 items-center justify-center rounded-lg transition hover:bg-white/10"
                                 >
                                     <img
-                                        src="https://img.icons8.com/ios-glyphs/90/ffffff/github.png"
+                                        src={ICON_GITHUB}
                                         alt="GitHub"
                                         className="h-5 w-5"
                                         loading="lazy"
@@ -308,15 +306,17 @@ export default function Home() {
                 <h2 className="mb-12 text-3xl font-normal md:text-4xl" style={{ letterSpacing: '-0.03em' }}>
                     {t('workflow.title')}
                 </h2>
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
                     {WORKFLOW_STEPS.map((step, idx) => (
                         <div key={step} className="liquid-glass rounded-xl p-6">
                             <div className="mb-4 text-3xl font-light text-white/60">
                                 {String(idx + 1).padStart(2, '0')}
                             </div>
-                            <h3 className="mb-2 text-lg font-medium">{t(`workflow.${step}.title`)}</h3>
+                            <h3 className="mb-2 text-lg font-medium">
+                                {t(`workflow.${step}.title`, { defaultValue: t('steps.step5') })}
+                            </h3>
                             <p className="text-sm leading-relaxed text-gray-400">
-                                {t(`workflow.${step}.desc`)}
+                                {t(`workflow.${step}.desc`, { defaultValue: t('capabilities.interaction.desc') })}
                             </p>
                         </div>
                     ))}
@@ -440,7 +440,7 @@ export default function Home() {
                             className="flex items-center gap-2 text-sm text-gray-400 transition hover:text-white"
                         >
                             <img
-                                src="https://img.icons8.com/ios-glyphs/90/ffffff/github.png"
+                                src={ICON_GITHUB}
                                 alt="GitHub"
                                 className="h-5 w-5"
                                 loading="lazy"

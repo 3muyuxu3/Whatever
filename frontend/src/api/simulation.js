@@ -23,6 +23,14 @@ export const prepareSimulation = (payload) =>
 export const getPrepareStatus = (payload) =>
     api.post('/simulation/prepare/status', payload)
 
+// 实时获取生成中的 Agent 人设（环境搭建阶段流式展示）
+export const getProfilesRealtime = (simId) =>
+    api.get(`/simulation/${simId}/profiles/realtime`)
+
+// 实时获取生成中的模拟配置
+export const getConfigRealtime = (simId) =>
+    api.get(`/simulation/${simId}/config/realtime`)
+
 // 启动模拟运行
 export const startSimulation = (payload) => api.post('/simulation/start', payload)
 
@@ -38,6 +46,13 @@ export const stopSimulation = (payload) => api.post('/simulation/stop', payload)
 
 // 上帝视角：向模拟世界动态注入新事件 / 变量
 export const injectVariable = (payload) => api.post('/simulation/inject', payload)
+
+// 查询模拟环境是否存活（可接受实时采访）
+export const getEnvStatus = (payload) => api.post('/simulation/env-status', payload)
+
+// 优雅关闭模拟环境
+export const closeSimulationEnv = (payload) =>
+    api.post('/simulation/close-env', payload)
 
 // 获取模拟详情（配置 + 人设 + 状态）
 export const getSimulationDetail = (simId) =>

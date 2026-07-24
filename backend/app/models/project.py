@@ -3,7 +3,6 @@
 一个「项目」对应用户上传的一份种子文档 + 预测需求，贯穿图谱构建到报告生成。
 """
 
-import json
 import os
 import threading
 import time
@@ -13,6 +12,10 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 from ..config import config
+from ..utils.atomic_json import atomic_write_json, read_json
+from ..utils.logger import get_logger
+
+logger = get_logger("project_store")
 
 
 class Project(BaseModel):
@@ -42,23 +45,20 @@ class ProjectStore:
         self._load()
 
     def _load(self) -> None:
+        data = read_json(self._path, default={}) or {}
         try:
-            if os.path.exists(self._path):
-                with open(self._path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                self._projects = {k: Project(**v) for k, v in data.items()}
-        except Exception:  # noqa: BLE001
+            self._projects = {k: Project(**v) for k, v in data.items()}
+        except Exception as e:  # noqa: BLE001
+            logger.error("解析项目数据失败：%s", e)
             self._projects = {}
 
     def _save(self) -> None:
         config.ensure_dirs()
-        with open(self._path, "w", encoding="utf-8") as f:
-            json.dump(
-                {k: v.model_dump() for k, v in self._projects.items()},
-                f,
-                ensure_ascii=False,
-                indent=2,
-            )
+        # 原子写入：写临时文件 → os.replace，避免写入中崩溃导致 JSON 损坏
+        atomic_write_json(
+            self._path,
+            {k: v.model_dump() for k, v in self._projects.items()},
+        )
 
     def create(self, **kwargs) -> Project:
         project = Project(**kwargs)

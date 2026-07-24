@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import ConsolePanel from './ConsolePanel'
 import LanguageSwitcher from './LanguageSwitcher'
-
-const GITHUB_URL = 'https://github.com/3muyuxu3/muyuxu'
+import { GITHUB_URL, ICON_GITHUB } from '../constants'
 
 // 状态圆点颜色
 const TONE = {
@@ -14,7 +13,7 @@ const TONE = {
 }
 
 /**
- * ProcessLayout —— 流程页统一外壳（浅色主题，参考 MiroFish 布局）
+ * ProcessLayout —— 流程页统一外壳（浅色主题）
  *
  * 顶部导航：返回 · Logo · 视图切换(图谱/双栏/工作台) · Step X/5 + 状态 · 语言 · GitHub
  * 主体：按视图模式在 primary（左，图谱/报告）与 secondary（右，工作台）之间切换布局
@@ -114,7 +113,7 @@ export default function ProcessLayout({
                         className="flex items-center gap-2 rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-neutral-800"
                     >
                         <img
-                            src="https://img.icons8.com/ios-glyphs/90/ffffff/github.png"
+                            src={ICON_GITHUB}
                             alt=""
                             className="h-4 w-4"
                             loading="lazy"

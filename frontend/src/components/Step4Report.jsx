@@ -1,23 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { downloadReport } from '../api/report'
+import { TOOLS, TOOL_META } from '../constants'
 import ReportContent from './ReportContent'
 import ReportCharts from './ReportCharts'
-
-// 报告生成期间展示的 4 种检索工具
-const TOOLS = [
-  { key: 'toolInsight', icon: 'https://img.icons8.com/ios/50/7c3aed/idea.png' },
-  { key: 'toolPanorama', icon: 'https://img.icons8.com/ios/50/0ea5e9/globe--v1.png' },
-  { key: 'toolQuick', icon: 'https://img.icons8.com/ios/50/f59e0b/flash-on.png' },
-  { key: 'toolInterview', icon: 'https://img.icons8.com/ios/50/059669/conference-call.png' },
-]
-
-// 工具名 -> 展示元数据（用于真实 ReACT 调用轨迹）
-const TOOL_META = {
-  QuickSearch: { color: '#f59e0b', key: 'toolQuick' },
-  PanoramaSearch: { color: '#0ea5e9', key: 'toolPanorama' },
-  InsightForge: { color: '#7c3aed', key: 'toolInsight' },
-  InterviewAgents: { color: '#059669', key: 'toolInterview' },
-}
 
 // 从报告内容提取普通段落，作为「检索到的记忆」列表
 function extractMemories(content) {
@@ -36,6 +21,77 @@ function keywords(requirement) {
     .slice(0, 10)
 }
 
+// 生成时间线：将结构化事件映射为可读文案与色点
+function timelineLabel(t, ev) {
+  const d = ev.details || {}
+  switch (ev.action) {
+    case 'report_start':
+      return t('timeline.reportStart', { defaultValue: '开始生成报告' })
+    case 'planning_complete':
+      return t('timeline.planningComplete', {
+        count: d.outline?.sections?.length ?? d.outline?.section_titles?.length ?? 0,
+        defaultValue: '大纲规划完成',
+      })
+    case 'section_start':
+      return t('timeline.sectionStart', { title: d.section_title || '', defaultValue: `撰写章节：${d.section_title || ''}` })
+    case 'section_complete':
+      return t('timeline.sectionComplete', { title: d.section_title || '', defaultValue: `完成章节：${d.section_title || ''}` })
+    case 'tool_call':
+      return t('timeline.toolCall', { tool: d.tool || '', hits: d.hits ?? 0, defaultValue: `检索 ${d.tool || ''}` })
+    case 'report_complete':
+      return t('timeline.reportComplete', { defaultValue: '报告生成完成' })
+    case 'error':
+      return t('timeline.error', { error: d.error || '', defaultValue: '生成失败' })
+    default:
+      return ev.action
+  }
+}
+
+function timelineDot(ev) {
+  switch (ev.action) {
+    case 'tool_call':
+      return (TOOL_META[ev.details?.tool] || {}).color || '#94a3b8'
+    case 'section_complete':
+    case 'report_complete':
+      return '#059669'
+    case 'planning_complete':
+      return '#7c3aed'
+    case 'section_start':
+      return '#0ea5e9'
+    case 'error':
+      return '#dc2626'
+    default:
+      return '#94a3b8'
+  }
+}
+
+// 报告生成时间线面板（逐步回放：规划 / 工具检索 / 章节完成 / 完成）
+function Timeline({ t, events }) {
+  return (
+    <div className="mb-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+      <div className="mb-3 text-sm font-semibold text-neutral-700">
+        {t('timeline.title', { defaultValue: '生成时间线' })}
+      </div>
+      <ol className="max-h-52 space-y-2 overflow-auto">
+        {events.map((ev, i) => (
+          <li key={i} className="flex items-start gap-2 text-xs">
+            <span
+              className="mt-1 inline-block h-2 w-2 shrink-0 rounded-full"
+              style={{ background: timelineDot(ev) }}
+            />
+            <span className="min-w-0 flex-1 truncate text-neutral-700" title={timelineLabel(t, ev)}>
+              {timelineLabel(t, ev)}
+            </span>
+            <span className="shrink-0 font-mono text-[10px] text-neutral-400">
+              {Number(ev.elapsed_seconds || 0).toFixed(1)}s
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  )
+}
+
 /**
  * Step4Report —— 步骤4 工作台：报告（左） + 工具调用结果（右）
  */
@@ -48,7 +104,9 @@ export default function Step4Report({
   requirement = '',
   actions = [],
   toolTrace = [],
+  timeline = [],
   onInteract,
+  onRegenerate,
 }) {
   const { t } = useTranslation()
   const memories = extractMemories(content)
@@ -95,6 +153,15 @@ export default function Step4Report({
           >
             ↓ {t('process.downloadReport')}
           </button>
+          {onRegenerate && !generating && content && (
+            <button
+              type="button"
+              onClick={onRegenerate}
+              className="flex-1 rounded-xl border border-neutral-200 bg-white px-5 py-2.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50"
+            >
+              ↻ {t('process.regenerateReport', { defaultValue: '重新生成' })}
+            </button>
+          )}
           {onInteract && content && (
             <button
               type="button"
@@ -105,6 +172,9 @@ export default function Step4Report({
             </button>
           )}
         </div>
+
+        {/* 生成时间线（逐步回放：规划 / 工具检索 / 章节完成） */}
+        {timeline.length > 0 && <Timeline t={t} events={timeline} />}
 
         {/* 生成中：检索工具调用活动 */}
         {generating && (

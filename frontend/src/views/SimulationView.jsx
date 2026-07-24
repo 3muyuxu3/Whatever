@@ -104,7 +104,7 @@ export default function SimulationView() {
     let alive = true
     let tries = 0
     let announced = false
-    pushLog('加载环境配置 …')
+    pushLog(t('log.loadingEnvConfig'))
     const poll = async () => {
       try {
         const res = await getSimulationDetail(simulationId)
@@ -149,7 +149,7 @@ export default function SimulationView() {
           setReady(true)
           if (!announced) {
             announced = true
-            pushLog(profs.length ? `已生成 ${profs.length} 个智能体人设` : '环境已就绪，可启动模拟')
+            pushLog(profs.length ? t('log.personasGenerated', { count: profs.length }) : t('log.envReady'))
           }
         }
         // 有人设即停止轮询；否则继续等待人设生成（最多约 20 次）
@@ -173,7 +173,7 @@ export default function SimulationView() {
   const handleStart = async () => {
     if (starting) return
     setStarting(true)
-    pushLog('保存配置并启动模拟 …')
+    pushLog(t('log.savingAndStarting'))
     const base = config || {}
     const fullConfig = {
       ...base,
@@ -320,7 +320,7 @@ export default function SimulationView() {
                 <input
                   value={platformParams[pf.key].recsys}
                   onChange={(e) => updateParam(pf.key, 'recsys', e.target.value)}
-                  className="mb-2 w-full rounded-lg border border-neutral-200 px-2.5 py-1.5 text-sm outline-none focus:border-neutral-400"
+                  className="mb-2 w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-sm text-neutral-900 outline-none focus:border-neutral-400"
                 />
                 <label className="mb-1 block text-[11px] text-neutral-400">{t('process.maxRecPost')}</label>
                 <input
@@ -329,7 +329,7 @@ export default function SimulationView() {
                   max={100}
                   value={platformParams[pf.key].max_rec_post}
                   onChange={(e) => updateParam(pf.key, 'max_rec_post', e.target.value)}
-                  className="w-full rounded-lg border border-neutral-200 px-2.5 py-1.5 text-sm outline-none focus:border-neutral-400"
+                  className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-sm text-neutral-900 outline-none focus:border-neutral-400"
                 />
               </div>
             ))}
@@ -356,7 +356,7 @@ export default function SimulationView() {
                 onChange={(e) => updateEvent(i, e.target.value)}
                 rows={2}
                 placeholder={t('process.seedEventPlaceholder')}
-                className="flex-1 resize-none rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-400"
+                className="flex-1 resize-none rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-neutral-400"
               />
               <button
                 type="button"
@@ -409,7 +409,7 @@ export default function SimulationView() {
       primary={<GraphPanel data={graphData} graphId={graphId} onRefresh={refresh} />}
       secondary={secondary}
       consoleData={{
-        title: 'ENVIRONMENT SETUP',
+        title: t('process.environmentSetup'),
         id: `sim_${(simulationId || '').slice(0, 12)}`,
         lines: logs,
       }}

@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
 // 行内格式：**加粗** / `代码` / *斜体*
@@ -191,7 +192,8 @@ function Block({ item }) {
  */
 export default function ReportContent({ reportId, content, generating = false, outline = [] }) {
     const { t } = useTranslation()
-    const { title, intro, sections } = parseReport(content)
+    // 缓存 Markdown 解析结果，避免大报告在每次渲染时重复全量解析
+    const { title, intro, sections } = useMemo(() => parseReport(content), [content])
 
     return (
         <div className="p-8">

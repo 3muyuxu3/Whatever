@@ -42,7 +42,7 @@
         }
     },
     "workflow": {
-        "title": "四步，推演未来",
+        "title": "五步，推演未来",
         "step1": {
             "title": "上传种子信息",
             "desc": "上传新闻、政策、金融信号或小说等文档，并描述预测需求。"
@@ -58,6 +58,10 @@
         "step4": {
             "title": "获取预测报告",
             "desc": "生成可交互的数字世界与详尽的 Markdown 预测报告。"
+        },
+        "step5": {
+            "title": "深度互动推演",
+            "desc": "以上帝视角注入变量，与报告或任意智能体对话，精准推演未来走向。"
         }
     },
     "start": {
@@ -76,7 +80,9 @@
         "subtitle": "继续探索你此前构建的数字世界",
         "empty": "暂无历史项目，快来构建你的第一个数字世界吧。",
         "open": "打开",
-        "delete": "删除"
+        "delete": "删除",
+        "confirmDelete": "确定删除该项目？此操作不可撤销。",
+        "deleteFailed": "删除失败，请重试。"
     },
     "footer": {
         "tagline": "模拟镜像，推演未来",
@@ -92,7 +98,9 @@
         "cancel": "取消",
         "confirm": "确认",
         "notFound": "页面未找到",
-        "backHome": "返回首页"
+        "backHome": "返回首页",
+        "errorTitle": "页面出现问题",
+        "errorDesc": "当前视图渲染失败，你可以重试或返回首页。"
     },
     "steps": {
         "step1": "图谱构建",
@@ -149,6 +157,8 @@
         "reportGenerating": "报告生成中",
         "chapters": "章节",
         "consoleOutput": "CONSOLE OUTPUT",
+        "systemDashboard": "SYSTEM DASHBOARD",
+        "environmentSetup": "ENVIRONMENT SETUP",
         "validMemory": "当前有效记忆",
         "historyMemory": "历史记忆",
         "involvedEntities": "涉及实体",
@@ -195,6 +205,7 @@
         "noPersonas": "暂无人设",
         "stopSim": "停止模拟",
         "downloadReport": "下载报告",
+        "regenerateReport": "重新生成",
         "toolActivity": "检索工具调用中",
         "godView": "上帝视角",
         "inject": "注入",
@@ -238,7 +249,49 @@
     "reports": {
         "title": "预测报告",
         "subtitle": "回顾你此前生成的预测报告",
-        "empty": "暂无报告，运行一次模拟即可生成。"
+        "empty": "暂无报告，运行一次模拟即可生成。",
+        "confirmDelete": "确定删除该报告？此操作不可撤销。",
+        "deleteFailed": "删除失败，请重试。"
+    },
+    "log": {
+        "ontologyGenerating": "正在生成本体 …",
+        "ontologyDone": "本体生成完成：{{entities}} 个实体类型，{{relations}} 个关系类型",
+        "ontologyFailed": "本体生成失败",
+        "buildStarting": "正在启动图谱构建 …",
+        "buildTaskStarted": "图谱构建任务已启动 … Task: {{task}}",
+        "graphRefreshed": "图谱已刷新，进度：{{progress}}%",
+        "buildFailed": "构建失败：{{error}}",
+        "buildStartFailed": "构建启动失败",
+        "preparingEnv": "准备模拟环境 …",
+        "profilesGenerated": "已生成人设 {{count}}",
+        "prepareFailed": "环境准备失败",
+        "resetProject": "重置项目状态 …",
+        "resetFailed": "重置失败",
+        "loadingEnvConfig": "加载环境配置 …",
+        "personasGenerated": "已生成 {{count}} 个智能体人设",
+        "envReady": "环境已就绪，可启动模拟",
+        "savingAndStarting": "保存配置并启动模拟 …",
+        "reportStarting": "开始生成报告 …",
+        "reportTaskStarted": "报告任务已启动 … {{id}}",
+        "writingSection": "正在撰写：{{title}}",
+        "reportDone": "报告生成完成",
+        "reportFailed": "报告生成失败",
+        "reportStartFailed": "报告启动失败",
+        "simStarting": "启动模拟 …（{{mode}}，{{rounds}} 轮）",
+        "startFailed": "启动失败",
+        "stopping": "停止模拟 …",
+        "stopFailed": "停止失败",
+        "injectFailed": "注入失败"
+    },
+    "timeline": {
+        "title": "生成时间线",
+        "reportStart": "开始生成报告",
+        "planningComplete": "大纲规划完成（{{count}} 章）",
+        "sectionStart": "撰写章节：{{title}}",
+        "sectionComplete": "完成章节：{{title}}",
+        "toolCall": "检索 {{tool}}（命中 {{hits}}）",
+        "reportComplete": "报告生成完成",
+        "error": "生成失败：{{error}}"
     },
     "language": "语言"
 }

@@ -1,5 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import * as d3 from 'd3'
+// 按需导入 D3 子模块（而非 import * as d3），便于构建时 tree-shaking，显著减小打包体积
+import {
+    select,
+    zoom,
+    forceSimulation,
+    forceLink,
+    forceManyBody,
+    forceCenter,
+    forceCollide,
+    drag,
+    scaleOrdinal,
+} from 'd3'
 import { useTranslation } from 'react-i18next'
 import { getEntity } from '../api/simulation'
 
@@ -10,7 +21,7 @@ const COLOR_PALETTE = [
 ]
 
 /**
- * GraphPanel —— D3 力导向知识图谱可视化（浅色主题，参考 MiroFish）
+ * GraphPanel —— D3 力导向知识图谱可视化
  *
  * 特性：白色点阵画布、标题、Refresh/全屏、Show Edge Labels 开关、实体图例、记忆更新提示；
  * forceSimulation 布局 + 拖拽/缩放 + 自环边 + 多重边曲线 + 节点/边详情。
@@ -24,6 +35,10 @@ export default function GraphPanel({ data, loading = false, memoryLabel, onRefre
     const { t } = useTranslation()
     const svgRef = useRef(null)
     const wrapRef = useRef(null)
+    const edgeLabelGRef = useRef(null)
+    // 跨刷新保留布局：节点位置缓存（id -> {x,y}）与当前缩放/平移变换
+    const posRef = useRef(new Map())
+    const zoomTransformRef = useRef(null)
     const [selected, setSelected] = useState(null)
     const [detail, setDetail] = useState(null)
     const [detailLoading, setDetailLoading] = useState(false)
@@ -76,7 +91,7 @@ export default function GraphPanel({ data, loading = false, memoryLabel, onRefre
     // 实体类型 -> 颜色
     const color = useMemo(() => {
         const types = Array.from(new Set(graph.nodes.map((n) => n.type)))
-        return d3.scaleOrdinal().domain(types).range(COLOR_PALETTE)
+        return scaleOrdinal().domain(types).range(COLOR_PALETTE)
     }, [graph])
 
     useEffect(() => {
@@ -84,18 +99,24 @@ export default function GraphPanel({ data, loading = false, memoryLabel, onRefre
         const width = wrapRef.current?.clientWidth || 800
         const height = wrapRef.current?.clientHeight || 520
 
-        const svg = d3.select(svgRef.current)
+        const svg = select(svgRef.current)
         svg.selectAll('*').remove()
         svg.attr('viewBox', [0, 0, width, height])
 
         const root = svg.append('g')
 
-        // 缩放与平移
-        const zoom = d3
-            .zoom()
+        // 缩放与平移（记录当前变换，刷新后恢复视角）
+        const zoomBehavior = zoom()
             .scaleExtent([0.2, 4])
-            .on('zoom', (event) => root.attr('transform', event.transform))
-        svg.call(zoom)
+            .on('zoom', (event) => {
+                root.attr('transform', event.transform)
+                zoomTransformRef.current = event.transform
+            })
+        svg.call(zoomBehavior)
+        // 跨刷新恢复上次的缩放/平移，避免自动刷新后视角回弹
+        if (zoomTransformRef.current) {
+            svg.call(zoomBehavior.transform, zoomTransformRef.current)
+        }
 
         // 统计多重边，用于曲线偏移
         const pairCount = {}
@@ -105,12 +126,20 @@ export default function GraphPanel({ data, loading = false, memoryLabel, onRefre
         })
         const pairIndex = {}
 
-        const simulation = d3
-            .forceSimulation(graph.nodes)
-            .force('link', d3.forceLink(graph.edges).id((d) => d.id).distance(120))
-            .force('charge', d3.forceManyBody().strength(-320))
-            .force('center', d3.forceCenter(width / 2, height / 2))
-            .force('collide', d3.forceCollide().radius(28))
+        // 跨刷新保留已有节点位置，避免每次数据刷新图谱重新抖动布局
+        graph.nodes.forEach((n) => {
+            const p = posRef.current.get(n.id)
+            if (p) {
+                n.x = p.x
+                n.y = p.y
+            }
+        })
+
+        const simulation = forceSimulation(graph.nodes)
+            .force('link', forceLink(graph.edges).id((d) => d.id).distance(120))
+            .force('charge', forceManyBody().strength(-320))
+            .force('center', forceCenter(width / 2, height / 2))
+            .force('collide', forceCollide().radius(28))
 
         // 边（path 支持曲线与自环）
         const link = root
@@ -129,6 +158,7 @@ export default function GraphPanel({ data, loading = false, memoryLabel, onRefre
 
         // 边标签（含白色背景矩形）
         const edgeLabelG = root.append('g').style('display', showEdgeLabels ? null : 'none')
+        edgeLabelGRef.current = edgeLabelG
         const edgeLabel = edgeLabelG.selectAll('g').data(graph.edges).join('g')
         edgeLabel.append('rect').attr('fill', 'rgba(255,255,255,0.85)').attr('rx', 3)
         const edgeLabelText = edgeLabel
@@ -141,7 +171,7 @@ export default function GraphPanel({ data, loading = false, memoryLabel, onRefre
         edgeLabelText.each(function () {
             const bbox = this.getBBox()
             const rect = this.previousSibling
-            d3.select(rect)
+            select(rect)
                 .attr('x', bbox.x - 3)
                 .attr('y', bbox.y - 1)
                 .attr('width', bbox.width + 6)
@@ -160,8 +190,7 @@ export default function GraphPanel({ data, loading = false, memoryLabel, onRefre
                 setSelected({ kind: 'node', data: d })
             })
             .call(
-                d3
-                    .drag()
+                drag()
                     .on('start', (event, d) => {
                         if (!event.active) simulation.alphaTarget(0.3).restart()
                         d.fx = d.x
@@ -228,8 +257,23 @@ export default function GraphPanel({ data, loading = false, memoryLabel, onRefre
         })
 
         svg.on('click', () => setSelected(null))
-        return () => simulation.stop()
-    }, [graph, color, showEdgeLabels])
+        return () => {
+            // 拆解前保存节点位置，供下次刷新时复用（保持布局稳定）
+            graph.nodes.forEach((n) => {
+                if (typeof n.x === 'number') {
+                    posRef.current.set(n.id, { x: n.x, y: n.y })
+                }
+            })
+            simulation.stop()
+        }
+    }, [graph, color]) // showEdgeLabels 不入依赖：切换标签显隐由下方独立 effect 处理，避免整图重建
+
+    // 仅切换边标签显隐：直接操作已有 <g> 的 display 样式，保留节点位置与缩放
+    useEffect(() => {
+        if (edgeLabelGRef.current) {
+            edgeLabelGRef.current.style('display', showEdgeLabels ? null : 'none')
+        }
+    }, [showEdgeLabels])
 
     const enterFullscreen = () => {
         const el = wrapRef.current

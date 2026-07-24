@@ -2,24 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { chatWithReportStream } from '../api/report'
 import { interviewAgentStream, interviewBatch, listAgents } from '../api/simulation'
+import { TOOLS, TOOL_META } from '../constants'
 import ReportContent from './ReportContent'
 import ReportCharts from './ReportCharts'
-
-// 四种工具（icons8 图标）
-const TOOLS = [
-  { key: 'toolInsight', icon: 'https://img.icons8.com/ios/50/7c3aed/idea.png' },
-  { key: 'toolPanorama', icon: 'https://img.icons8.com/ios/50/0ea5e9/globe--v1.png' },
-  { key: 'toolQuick', icon: 'https://img.icons8.com/ios/50/f59e0b/flash-on.png' },
-  { key: 'toolInterview', icon: 'https://img.icons8.com/ios/50/059669/conference-call.png' },
-]
-
-// 工具名 -> 展示元数据（用于真实 ReACT 调用轨迹）
-const TOOL_META = {
-  QuickSearch: { color: '#f59e0b', key: 'toolQuick' },
-  PanoramaSearch: { color: '#0ea5e9', key: 'toolPanorama' },
-  InsightForge: { color: '#7c3aed', key: 'toolInsight' },
-  InterviewAgents: { color: '#059669', key: 'toolInterview' },
-}
 
 // 消息气泡
 function Bubble({ role, children }) {
@@ -76,6 +61,21 @@ export default function Step5Interaction({ reportId, simId, content, outline = [
 
   const reportEndRef = useRef(null)
   const agentEndRef = useRef(null)
+  // 流式请求的中止控制器：组件卸载时中止仍在进行的流，避免离开后仍占用连接
+  const reportAbortRef = useRef(null)
+  const agentAbortRef = useRef(null)
+  // 流式增量刷新：用 ref 累积最新文本 + requestAnimationFrame 合并 setState，
+  // 避免每个 token 都触发一次 O(n) 数组拷贝，长对话下显著降低渲染开销
+  const reportRafRef = useRef(null)
+  const reportPendingRef = useRef('')
+  const agentRafRef = useRef(null)
+  const agentPendingRef = useRef('')
+  useEffect(() => () => {
+    reportAbortRef.current?.abort()
+    agentAbortRef.current?.abort()
+    if (reportRafRef.current) cancelAnimationFrame(reportRafRef.current)
+    if (agentRafRef.current) cancelAnimationFrame(agentRafRef.current)
+  }, [])
 
   // 加载可对话的个体
   useEffect(() => {
@@ -107,19 +107,38 @@ export default function Step5Interaction({ reportId, simId, content, outline = [
     ])
     setReportInput('')
     setReportSending(true)
+    const controller = new AbortController()
+    reportAbortRef.current = controller
+    reportPendingRef.current = ''
+    // rAF 合并刷新：将最新累积文本落定到最后一条助手消息
+    const flush = () => {
+      reportRafRef.current = null
+      setReportMsgs((m) => {
+        const arr = [...m]
+        arr[arr.length - 1] = { role: 'assistant', content: reportPendingRef.current }
+        return arr
+      })
+    }
     try {
-      await chatWithReportStream(
+      const full = await chatWithReportStream(
         { report_id: reportId, message: q },
         {
-          onToken: (_d, full) =>
-            setReportMsgs((m) => {
-              const arr = [...m]
-              arr[arr.length - 1] = { role: 'assistant', content: full }
-              return arr
-            }),
+          signal: controller.signal,
+          onToken: (_d, acc) => {
+            reportPendingRef.current = acc
+            if (reportRafRef.current == null) reportRafRef.current = requestAnimationFrame(flush)
+          },
         },
       )
+      // 流结束：取消挂起的 rAF，落定最终完整内容
+      if (reportRafRef.current) { cancelAnimationFrame(reportRafRef.current); reportRafRef.current = null }
+      setReportMsgs((m) => {
+        const arr = [...m]
+        arr[arr.length - 1] = { role: 'assistant', content: full || reportPendingRef.current }
+        return arr
+      })
     } catch {
+      if (reportRafRef.current) { cancelAnimationFrame(reportRafRef.current); reportRafRef.current = null }
       setReportMsgs((m) => {
         const arr = [...m]
         arr[arr.length - 1] = { role: 'assistant', content: t('common.error') }
@@ -145,19 +164,36 @@ export default function Step5Interaction({ reportId, simId, content, outline = [
     }))
     setAgentInput('')
     setAgentSending(true)
+    const controller = new AbortController()
+    agentAbortRef.current = controller
+    agentPendingRef.current = ''
+    const flush = () => {
+      agentRafRef.current = null
+      setThreads((th) => {
+        const arr = [...(th[aid] || [])]
+        arr[arr.length - 1] = { role: 'assistant', content: agentPendingRef.current }
+        return { ...th, [aid]: arr }
+      })
+    }
     try {
-      await interviewAgentStream(
+      const full = await interviewAgentStream(
         { simulation_id: simId, agent_id: aid, question: q },
         {
-          onToken: (_d, full) =>
-            setThreads((th) => {
-              const arr = [...(th[aid] || [])]
-              arr[arr.length - 1] = { role: 'assistant', content: full }
-              return { ...th, [aid]: arr }
-            }),
+          signal: controller.signal,
+          onToken: (_d, acc) => {
+            agentPendingRef.current = acc
+            if (agentRafRef.current == null) agentRafRef.current = requestAnimationFrame(flush)
+          },
         },
       )
+      if (agentRafRef.current) { cancelAnimationFrame(agentRafRef.current); agentRafRef.current = null }
+      setThreads((th) => {
+        const arr = [...(th[aid] || [])]
+        arr[arr.length - 1] = { role: 'assistant', content: full || agentPendingRef.current }
+        return { ...th, [aid]: arr }
+      })
     } catch {
+      if (agentRafRef.current) { cancelAnimationFrame(agentRafRef.current); agentRafRef.current = null }
       setThreads((th) => {
         const arr = [...(th[aid] || [])]
         arr[arr.length - 1] = { role: 'assistant', content: t('common.error') }

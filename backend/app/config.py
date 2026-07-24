@@ -5,6 +5,7 @@
 """
 
 import os
+import secrets
 
 from dotenv import load_dotenv
 
@@ -16,10 +17,16 @@ class Config:
     """全局配置对象。"""
 
     # ---- Flask ----
-    DEBUG = os.getenv("DEBUG", "true").lower() == "true"
-    SECRET_KEY = os.getenv("SECRET_KEY", "simulmirror-secret")
+    # 默认关闭 debug（生产安全）；本地开发可显式设置环境变量 DEBUG=true
+    DEBUG = os.getenv("DEBUG", "false").lower() == "true"
+    # SECRET_KEY：未显式配置时生成随机密钥，避免使用可预测的默认值签名 session/cookie
+    SECRET_KEY = os.getenv("SECRET_KEY") or secrets.token_hex(32)
+    # 跨域白名单：逗号分隔的来源列表；默认 * 便于本地开发，生产应显式收紧为具体域名
+    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*")
     # 文件上传大小限制：50MB
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024
+    # 允许上传的文件扩展名（与 file_parser 支持的格式一致）
+    ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md", ".markdown"}
     # 服务监听地址与端口（后端 API 默认 5001）
     HOST = os.getenv("HOST", "0.0.0.0")
     PORT = int(os.getenv("PORT", "5001"))
@@ -30,10 +37,37 @@ class Config:
 
     # ---- 模拟 ----
     OASIS_DEFAULT_MAX_ROUNDS = 10
+    # OASIS 各平台可用动作（与 scripts/action_logger 保持一致）
+    OASIS_TWITTER_ACTIONS = [
+        "CREATE_POST", "LIKE_POST", "REPOST", "FOLLOW", "DO_NOTHING", "QUOTE_POST",
+    ]
+    OASIS_REDDIT_ACTIONS = [
+        "LIKE_POST", "DISLIKE_POST", "CREATE_POST", "CREATE_COMMENT", "LIKE_COMMENT",
+        "DISLIKE_COMMENT", "SEARCH_POSTS", "SEARCH_USER", "TREND", "REFRESH",
+        "DO_NOTHING", "FOLLOW", "MUTE",
+    ]
+    # 模拟运行期间图谱记忆增量写回的轮询间隔（秒）
+    MEMORY_UPDATE_INTERVAL = float(os.getenv("MEMORY_UPDATE_INTERVAL", "12"))
+
+    # ---- 图谱构建 / Zep 限流（原 graph_builder 内散落的魔法数字集中于此） ----
+    # 分批写入 Zep 的批大小
+    GRAPH_BATCH_SIZE = int(os.getenv("GRAPH_BATCH_SIZE", "3"))
+    # 等待 episode 处理完成的最长秒数与轮询间隔
+    EPISODE_WAIT_TIMEOUT = int(os.getenv("EPISODE_WAIT_TIMEOUT", "240"))
+    EPISODE_POLL_INTERVAL = int(os.getenv("EPISODE_POLL_INTERVAL", "8"))
+    # 相邻 Zep 请求的最小间隔（秒）；FREE 计划限流严，取较大值
+    ZEP_MIN_INTERVAL = float(os.getenv("ZEP_MIN_INTERVAL", "3.0"))
+    # 图谱读取短时缓存 TTL（秒）与最大缓存条目数（防内存无限增长）
+    GRAPH_CACHE_TTL = float(os.getenv("GRAPH_CACHE_TTL", "15.0"))
+    GRAPH_CACHE_MAX = int(os.getenv("GRAPH_CACHE_MAX", "64"))
 
     # ---- 报告 Agent ----
-    REPORT_AGENT_MAX_TOOL_CALLS = 5
-    REPORT_AGENT_MAX_REFLECTION_ROUNDS = 2
+    # 单次报告的图谱检索工具调用上限（控制 Zep 请求量，避免 FREE 计划 429）
+    REPORT_AGENT_MAX_TOOL_CALLS = 3
+    REPORT_AGENT_MAX_REFLECTION_ROUNDS = 1
+    # 报告章节生成温度
+    REPORT_AGENT_TEMPERATURE = float(
+        os.getenv("REPORT_AGENT_TEMPERATURE", "0.5"))
 
     # ---- 目录 ----
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -90,6 +124,29 @@ class Config:
     def has_zep(cls) -> bool:
         """是否已配置 Zep Cloud。"""
         return cls._is_set(cls.ZEP_API_KEY)
+
+    @classmethod
+    def validate(cls) -> list[str]:
+        """启动时校验关键配置，返回警告列表。
+
+        注意：本项目支持 LLM/Zep 缺失时的优雅降级，故这里仅返回「警告」而非致命错误，
+        由启动入口决定是否打印提示，不强制退出。
+        """
+        warnings: list[str] = []
+        if not cls.has_llm():
+            warnings.append(
+                "未配置 LLM_API_KEY：将以降级模式运行（模拟走内置动作循环，报告为兜底大纲）。"
+            )
+        if not cls.has_zep():
+            warnings.append(
+                "未配置 ZEP_API_KEY：知识图谱与记忆检索功能不可用，将自动降级。"
+            )
+        # CORS 通配符在生产（非 DEBUG）下有安全风险，提示收紧为具体域名白名单
+        if not cls.DEBUG and str(cls.CORS_ORIGINS).strip() == "*":
+            warnings.append(
+                "CORS_ORIGINS 为通配符 '*'：生产环境建议通过环境变量收紧为具体前端域名。"
+            )
+        return warnings
 
 
 # 全局单例

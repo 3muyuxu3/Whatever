@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useMemo, useState } from 'react'
 
 /**
  * UploadContext —— 待上传文件与预测需求的全局状态
@@ -18,10 +18,14 @@ export function UploadProvider({ children }) {
         setRequirement('')
     }
 
+    // memo 化 value，避免 Provider 每次渲染都创建新对象引用导致所有消费组件重渲染
+    const value = useMemo(
+        () => ({ files, setFiles, requirement, setRequirement, reset }),
+        [files, requirement],
+    )
+
     return (
-        <UploadContext.Provider
-            value={{ files, setFiles, requirement, setRequirement, reset }}
-        >
+        <UploadContext.Provider value={value}>
             {children}
         </UploadContext.Provider>
     )

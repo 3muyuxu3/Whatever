@@ -28,6 +28,36 @@ def injections_dir(sim_id: str) -> str:
     return d
 
 
+# ---- 环境存活状态 / 关闭命令（ 的环境常驻 + close_env） ----
+
+def env_status_path(sim_id: str) -> str:
+    """模拟环境状态文件路径（由子进程写入，主进程读取）。"""
+    return os.path.join(config.DATA_DIR, "sims", sim_id, "env_status.json")
+
+
+def read_env_status(sim_id: str) -> dict:
+    """读取模拟环境状态（主进程侧）。不存在时返回空字典。"""
+    path = env_status_path(sim_id)
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def close_env_path(sim_id: str) -> str:
+    """关闭环境信号文件路径。"""
+    return os.path.join(ipc_dir(sim_id), "close.json")
+
+
+def write_close_env(sim_id: str) -> None:
+    """主进程侧：写入关闭环境信号，运行中的子进程下一轮轮询到后优雅退出等待循环。"""
+    with open(close_env_path(sim_id), "w", encoding="utf-8") as f:
+        json.dump({"ts": time.time()}, f, ensure_ascii=False)
+
+
 # ---- 主进程侧（上帝视角注入变量） ----
 
 def write_injection(sim_id: str, content: str, kind: str = "event",
@@ -76,8 +106,12 @@ def read_interview_response(sim_id: str, req_id: str, timeout: float = 30.0):
     deadline = time.time() + timeout
     while time.time() < deadline:
         if os.path.exists(path):
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError):
+                # 文件在子进程写入 / 消费的瞬间可能缺失或不完整，稍后重试
+                pass
         time.sleep(0.5)
     return None
 
@@ -90,8 +124,12 @@ def poll_interview_requests(sim_id: str) -> list[dict]:
     requests = []
     for name in os.listdir(d):
         if name.startswith("req_") and name.endswith(".json"):
-            with open(os.path.join(d, name), "r", encoding="utf-8") as f:
-                requests.append(json.load(f))
+            try:
+                with open(os.path.join(d, name), "r", encoding="utf-8") as f:
+                    requests.append(json.load(f))
+            except (FileNotFoundError, json.JSONDecodeError):
+                # 请求文件可能被并发消费 / 未写完，跳过即可
+                continue
     return requests
 
 

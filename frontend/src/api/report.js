@@ -12,6 +12,9 @@ export const generateReport = (payload) => api.post('/report/generate', payload)
 export const getReportStatus = (payload) =>
     api.post('/report/generate/status', payload)
 
+// 获取报告生成的结构化事件日志（逐步时间线，可回放）
+export const getReportLog = (id) => api.get(`/report/${id}/log`)
+
 // 获取 / 删除报告
 export const getReport = (id) => api.get(`/report/${id}`)
 export const deleteReport = (id) => api.delete(`/report/${id}`)

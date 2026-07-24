@@ -27,8 +27,11 @@ def create_app() -> Flask:
     # 确保上传/数据目录存在
     config.ensure_dirs()
 
-    # 允许前端跨域访问 /api/*
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    # 允许前端跨域访问 /api/*（生产可经 CORS_ORIGINS 环境变量收紧为具体域名白名单）
+    origins = config.CORS_ORIGINS
+    if origins != "*":
+        origins = [o.strip() for o in origins.split(",") if o.strip()]
+    CORS(app, resources={r"/api/*": {"origins": origins}})
 
     # 注册业务蓝图
     register_blueprints(app)
@@ -61,7 +64,11 @@ def create_app() -> Flask:
     @app.errorhandler(500)
     def server_error(e):
         logger.error("内部错误：%s", e)
-        return jsonify({"error": "internal_error", "detail": str(e)}), 500
+        # 生产环境不向客户端泄漏内部异常详情，仅调试模式返回 detail
+        payload = {"error": "internal_error"}
+        if config.DEBUG:
+            payload["detail"] = str(e)
+        return jsonify(payload), 500
 
     # 退出时清理运行中的模拟子进程（仅注册一次）
     global _cleanup_registered

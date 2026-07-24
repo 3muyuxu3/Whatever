@@ -11,7 +11,7 @@ from flask import Blueprint, jsonify, request
 from werkzeug.utils import secure_filename
 
 from ..config import config
-from ..models import TaskStatus, project_store, task_store
+from ..models import TaskStatus, TaskRegistry, project_store, task_store
 from ..services import graph_builder
 from ..services.ontology_generator import generate_ontology
 from ..utils.file_parser import parse_file
@@ -22,12 +22,12 @@ logger = get_logger("api.graph")
 
 graph_bp = Blueprint("graph", __name__)
 
-# 项目 -> 各阶段任务 ID 的映射（用于状态轮询）
-_ontology_tasks: dict[str, str] = {}
-_build_tasks: dict[str, str] = {}
+# 项目 -> 各阶段任务 ID 的映射（用于状态轮询，线程安全）
+_ontology_tasks = TaskRegistry()
+_build_tasks = TaskRegistry()
 # 项目 -> 构建中的 graph_id（图谱创建后即写入，供前端在构建期间实时可视化；
 # 与 project.graph_id 区分：后者仅在构建完成时才置位，用于解锁下一步）
-_build_graph_ids: dict[str, str] = {}
+_build_graph_ids = TaskRegistry()
 
 
 # ---------------- 项目管理 ----------------
@@ -73,6 +73,14 @@ def ontology_generate():
     if not files:
         return jsonify({"error": t("bad_request")}), 400
 
+    # 校验扩展名：仅接受受支持的种子文件类型，拒绝其他文件避免任意文件落盘
+    def _allowed(fn: str) -> bool:
+        return os.path.splitext(fn or "")[1].lower() in config.ALLOWED_EXTENSIONS
+
+    files = [f for f in files if _allowed(f.filename)]
+    if not files:
+        return jsonify({"error": t("unsupported_file_type")}), 400
+
     # 创建项目并保存全部文件
     first_name = secure_filename(files[0].filename or "seed.txt")
     project = project_store.create(
@@ -104,6 +112,9 @@ def ontology_generate():
                 except Exception as e:  # noqa: BLE001
                     logger.warning("解析文件失败 %s：%s", fn, e)
             text = "\n\n".join(parts)
+            if not text.strip():
+                # 所有文件解析失败 / 为空：不再空跑 LLM 生成无意义本体，直接报错
+                raise ValueError("未能从上传文件中解析出任何文本内容")
             task_store.update(task.id, progress=40)
             ontology = generate_ontology(text, requirement)
             project_store.update(
@@ -189,11 +200,23 @@ def build_status():
     # 构建中优先返回临时 graph_id，让前端在建图过程中即可拉取并实时展示图谱
     live_graph_id = (project.graph_id if project and project.graph_id
                      else _build_graph_ids.get(project_id))
+    if task:
+        status = task.status.value
+        progress = task.progress
+        error = task.error
+    else:
+        # 任务对象丢失（如服务重启）时，用项目状态推导前端可识别的终态，
+        # 避免前端因拿不到 completed/failed 而无限轮询。
+        _terminal = {"graph_ready": "completed", "failed": "failed"}
+        status = _terminal.get(
+            project.status, project.status) if project else "unknown"
+        progress = 100 if status == "completed" else 0
+        error = None
     return jsonify(
         {
-            "status": (task.status.value if task else (project.status if project else "unknown")),
-            "progress": task.progress if task else 0,
-            "error": task.error if task else None,
+            "status": status,
+            "progress": progress,
+            "error": error,
             "graph_id": live_graph_id,
         }
     )

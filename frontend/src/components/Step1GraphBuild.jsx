@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 // 小徽标
@@ -12,12 +13,16 @@ function Badge({ tone = 'gray', children }) {
     )
 }
 
-// 类型标签
-function Tag({ children }) {
+// 类型标签（可点击查看详情）
+function Tag({ children, onClick }) {
     return (
-        <span className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-sm text-neutral-700">
+        <button
+            type="button"
+            onClick={onClick}
+            className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-sm text-neutral-700 transition hover:border-neutral-400 hover:bg-white"
+        >
             {children}
-        </span>
+        </button>
     )
 }
 
@@ -42,16 +47,19 @@ function Stat({ value, label }) {
  */
 export default function Step1GraphBuild({ project, building = false, progress = 0, stats = {}, onBuild, onReset }) {
     const { t } = useTranslation()
+    const [selected, setSelected] = useState(null) // 当前查看详情的本体项 { kind, item }
     const ontology = project?.ontology || {}
-    const entityTypes = (ontology.entity_types || []).map((e) => e.name || e)
-    const relationTypes = (ontology.edge_types || []).map((e) => e.name || e)
+    // 保留完整对象（含 description / attributes），以便点击查看详情
+    const toItem = (e) => (typeof e === 'string' ? { name: e } : e || {})
+    const entityTypes = (ontology.entity_types || []).map(toItem)
+    const relationTypes = (ontology.edge_types || []).map(toItem)
     const ontologyReady = entityTypes.length > 0
     const graphReady = !!project?.graph_id
 
     return (
         <div className="space-y-5 p-6">
             {/* 01 本体生成 */}
-            <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+            <section className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                         <span className="text-2xl font-bold text-neutral-300">01</span>
@@ -74,8 +82,8 @@ export default function Step1GraphBuild({ project, building = false, progress = 
                     </div>
                     <div className="flex flex-wrap gap-2">
                         {entityTypes.length === 0 && <span className="text-sm text-neutral-400">…</span>}
-                        {entityTypes.map((tag) => (
-                            <Tag key={tag}>{tag}</Tag>
+                        {entityTypes.map((it) => (
+                            <Tag key={it.name} onClick={() => setSelected({ kind: 'entity', item: it })}>{it.name}</Tag>
                         ))}
                     </div>
                 </div>
@@ -86,9 +94,51 @@ export default function Step1GraphBuild({ project, building = false, progress = 
                             {t('process.genRelationTypes')}
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            {relationTypes.map((tag) => (
-                                <Tag key={tag}>{tag}</Tag>
+                            {relationTypes.map((it) => (
+                                <Tag key={it.name} onClick={() => setSelected({ kind: 'relation', item: it })}>{it.name}</Tag>
                             ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* 本体项详情浮层（点击实体/关系标签后展示） */}
+                {selected && (
+                    <div className="absolute bottom-5 left-5 right-5 top-[4.75rem] z-10 flex flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white/95 shadow-xl backdrop-blur">
+                        <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-3">
+                            <div className="flex items-center gap-2.5">
+                                <span className="rounded bg-neutral-900 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
+                                    {selected.kind === 'entity' ? 'ENTITY' : 'RELATION'}
+                                </span>
+                                <span className="font-mono text-sm font-bold text-neutral-900">{selected.item.name}</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setSelected(null)}
+                                className="text-lg leading-none text-neutral-400 transition hover:text-neutral-700"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto px-5 py-4">
+                            <p className="border-b border-dashed border-neutral-200 pb-3 text-sm leading-relaxed text-neutral-600">
+                                {selected.item.description || ''}
+                            </p>
+                            {(selected.item.attributes || []).length > 0 && (
+                                <div className="mt-4">
+                                    <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
+                                        ATTRIBUTES
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        {selected.item.attributes.map((a) => (
+                                            <div key={a.name} className="flex flex-wrap items-baseline gap-1.5 rounded-md bg-neutral-50 px-2.5 py-1.5 text-xs">
+                                                <span className="font-mono font-semibold text-neutral-900">{a.name}</span>
+                                                {a.type && <span className="text-[10px] text-neutral-400">({a.type})</span>}
+                                                <span className="flex-1 text-neutral-500">{a.description}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

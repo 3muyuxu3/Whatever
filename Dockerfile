@@ -17,11 +17,15 @@ RUN npm install -g pnpm@10 && pip install --no-cache-dir uv
 
 WORKDIR /app
 
-# ---- 前端：安装依赖并构建 ----
+# ---- 前端：先拷依赖描述文件并安装（充分利用层缓存），再拷源码构建 ----
+COPY frontend/package.json frontend/pnpm-lock.yaml ./frontend/
+RUN cd frontend && pnpm install --frozen-lockfile
 COPY frontend ./frontend
-RUN cd frontend && pnpm install --frozen-lockfile && pnpm run build
+RUN cd frontend && pnpm run build
 
-# ---- 后端：安装完整依赖 ----
+# ---- 后端：先拷依赖描述文件并安装依赖（层缓存），再拷源码安装项目本身 ----
+COPY backend/pyproject.toml backend/uv.lock ./backend/
+RUN cd backend && uv sync --frozen --no-dev --no-install-project
 COPY backend ./backend
 RUN cd backend && uv sync --frozen --no-dev
 

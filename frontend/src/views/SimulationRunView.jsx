@@ -66,26 +66,32 @@ export default function SimulationRunView() {
   }, [simulationId])
 
   const handleStart = useCallback(async () => {
-    pushLog(`启动模拟 … (${mode}, ${maxRounds} 轮)`)
+    pushLog(t('log.simStarting', { mode, rounds: maxRounds }))
     try {
-      await startSimulation({ simulation_id: simulationId, max_rounds: maxRounds, mode })
+      // 开启图谱记忆动态更新：模拟中 Agent 活动实时写回 Zep 图谱
+      await startSimulation({
+        simulation_id: simulationId,
+        max_rounds: maxRounds,
+        mode,
+        enable_graph_memory_update: true,
+      })
       startedRef.current = true
       setStarted(true)
     } catch (e) {
-      pushLog('启动失败', 'ERROR')
+      pushLog(t('log.startFailed'), 'ERROR')
     }
-  }, [simulationId, maxRounds, mode])
+  }, [simulationId, maxRounds, mode, t])
 
   const handleStop = useCallback(async () => {
-    pushLog('停止模拟 …')
+    pushLog(t('log.stopping'))
     try {
       await stopSimulation({ simulation_id: simulationId })
       startedRef.current = false
       setStarted(false)
     } catch (e) {
-      pushLog('停止失败', 'ERROR')
+      pushLog(t('log.stopFailed'), 'ERROR')
     }
-  }, [simulationId])
+  }, [simulationId, t])
 
   const handleInject = useCallback(async (content) => {
     try {
@@ -93,7 +99,7 @@ export default function SimulationRunView() {
       pushLog(`🛰 ${t('process.godView')}: ${content}`, undefined, 'accent')
       return res.data
     } catch (e) {
-      pushLog('注入失败', 'ERROR')
+      pushLog(t('log.injectFailed'), 'ERROR')
       throw e
     }
   }, [simulationId, t])

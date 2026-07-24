@@ -52,6 +52,10 @@ export default function Step3Simulation({ status, actions = [], started, running
   const { t } = useTranslation()
   const round = status?.round || 0
   const maxRounds = status?.max_rounds || 40
+  // 各平台独立轮次（双平台并行时分别展示；后端 status.per_platform 提供）
+  const perPlatform = status?.per_platform || {}
+  const twitterRound = perPlatform.twitter?.round ?? round
+  const redditRound = perPlatform.reddit?.round ?? round
 
   const [injectText, setInjectText] = useState('')
   const [injecting, setInjecting] = useState(false)
@@ -80,8 +84,8 @@ export default function Step3Simulation({ status, actions = [], started, running
     <div className="flex h-full flex-col">
       {/* 顶部：两张统计卡 + 生成报告按钮 */}
       <div className="flex items-stretch gap-4 border-b border-neutral-200 p-6">
-        <StatCard icon={ICON_GLOBE} title={t('process.infoPlaza')} round={round} maxRounds={maxRounds} acts={plaza.length} />
-        <StatCard icon={ICON_CHAT} title={t('process.topicCommunity')} round={round} maxRounds={maxRounds} acts={community.length} />
+        <StatCard icon={ICON_GLOBE} title={t('process.infoPlaza')} round={twitterRound} maxRounds={maxRounds} acts={plaza.length} />
+        <StatCard icon={ICON_CHAT} title={t('process.topicCommunity')} round={redditRound} maxRounds={maxRounds} acts={community.length} />
         <div className="flex shrink-0 items-center gap-2 self-center">
           {!started && (
             <button

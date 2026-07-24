@@ -35,7 +35,7 @@ export default function ConsolePanel({ title = 'CONSOLE OUTPUT', id, lines = [],
                 {lines.map((l, i) => (
                     <div key={i} className="whitespace-pre-wrap break-all">
                         {l.time && <span className="text-neutral-500">[{l.time}] </span>}
-                        {l.level && <span className="text-emerald-400">{l.level} </span>}
+                        {l.level && <span className={l.level === 'ERROR' ? 'text-red-400' : 'text-emerald-400'}>{l.level} </span>}
                         <span className={l.tone === 'accent' ? 'text-sky-300' : ''}>{l.text}</span>
                     </div>
                 ))}

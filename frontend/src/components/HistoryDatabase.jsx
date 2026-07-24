@@ -13,6 +13,7 @@ export default function HistoryDatabase() {
     const navigate = useNavigate()
     const [projects, setProjects] = useState([])
     const [loading, setLoading] = useState(true)
+    const [err, setErr] = useState('')
 
     const load = async () => {
         setLoading(true)
@@ -34,11 +35,15 @@ export default function HistoryDatabase() {
 
     const handleDelete = async (id, e) => {
         e.stopPropagation()
+        // 删除前二次确认，避免误触丢失项目
+        if (!window.confirm(t('history.confirmDelete', { defaultValue: '确定删除该项目？此操作不可撤销。' }))) return
+        setErr('')
         try {
             await deleteProject(id)
             load()
-        } catch (err) {
-            /* 忽略删除失败 */
+        } catch (e2) {
+            // 失败时给出反馈，而非静默吞没
+            setErr(t('history.deleteFailed', { defaultValue: '删除失败，请重试。' }))
         }
     }
 
@@ -55,31 +60,34 @@ export default function HistoryDatabase() {
     }
 
     return (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {projects.map((p) => (
-                <div
-                    key={p.id}
-                    onClick={() => navigate(`/process/${p.id}`)}
-                    className="liquid-glass group cursor-pointer rounded-xl p-5 transition hover:-translate-y-1"
-                >
-                    <h3 className="mb-2 truncate text-lg font-medium text-white">
-                        {p.name || p.id}
-                    </h3>
-                    <p className="mb-4 line-clamp-2 text-sm text-gray-400">
-                        {p.requirement || p.description || ''}
-                    </p>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>{p.status || ''}</span>
-                        <button
-                            type="button"
-                            onClick={(e) => handleDelete(p.id, e)}
-                            className="text-gray-400 opacity-0 transition hover:text-white group-hover:opacity-100"
-                        >
-                            {t('history.delete')}
-                        </button>
+        <>
+            {err && <p className="mb-3 text-sm text-red-400">{err}</p>}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {projects.map((p) => (
+                    <div
+                        key={p.id}
+                        onClick={() => navigate(`/process/${p.id}`)}
+                        className="liquid-glass group cursor-pointer rounded-xl p-5 transition hover:-translate-y-1"
+                    >
+                        <h3 className="mb-2 truncate text-lg font-medium text-white">
+                            {p.name || p.id}
+                        </h3>
+                        <p className="mb-4 line-clamp-2 text-sm text-gray-400">
+                            {p.requirement || p.description || ''}
+                        </p>
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                            <span>{p.status || ''}</span>
+                            <button
+                                type="button"
+                                onClick={(e) => handleDelete(p.id, e)}
+                                className="text-gray-400 opacity-0 transition hover:text-white group-hover:opacity-100"
+                            >
+                                {t('history.delete')}
+                            </button>
+                        </div>
                     </div>
-                </div>
-            ))}
-        </div>
+                ))}
+            </div>
+        </>
     )
 }

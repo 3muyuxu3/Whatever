@@ -14,24 +14,23 @@ from ..utils.logger import get_logger
 
 logger = get_logger("sim_runner")
 
-# 运行模式 -> 脚本文件
-SCRIPTS = {
-    "twitter": "run_twitter_simulation.py",
-    "reddit": "run_reddit_simulation.py",
-    "parallel": "run_parallel_simulation.py",
-}
+# 统一模拟脚本（通过 --platform 区分 twitter / reddit / parallel）
+SCRIPT = "run_simulation.py"
+VALID_MODES = ("twitter", "reddit", "parallel")
 
 
 def start_simulation_process(sim_id: str, mode: str, config_path: str, work_dir: str):
     """启动模拟子进程，返回 Popen 对象。"""
-    script = SCRIPTS.get(mode, SCRIPTS["parallel"])
-    script_path = os.path.join(config.BASE_DIR, "scripts", script)
+    if mode not in VALID_MODES:
+        mode = "parallel"
+    script_path = os.path.join(config.BASE_DIR, "scripts", SCRIPT)
     cmd = [
         sys.executable,
         script_path,
         "--sim-id", sim_id,
         "--config", config_path,
         "--work-dir", work_dir,
+        "--platform", mode,
     ]
     logger.info("启动模拟子进程：%s", " ".join(cmd))
 

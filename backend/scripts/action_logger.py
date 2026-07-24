@@ -74,11 +74,67 @@ def _maybe_llm():
         return None
 
 
-def _handle_interviews(work_dir: str, agents_by_name: dict, llm) -> None:
-    """处理 IPC 目录中的采访请求（生成应答并回写）。"""
+def _load_profiles(work_dir: str) -> list:
+    """读取已生成的 Agent 人设（profiles_reddit.json），供深度采访时贴合人设作答。"""
+    path = os.path.join(work_dir, "profiles_reddit.json")
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, list) else []
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def _find_profile(profiles: list, agent_id) -> dict | None:
+    """根据 agent_id（entity_uuid / name / 索引）定位对应人设。"""
+    if not profiles:
+        return None
+    aid = str(agent_id) if agent_id is not None else ""
+    # 数字索引形式
+    if aid.isdigit():
+        i = int(aid)
+        if 0 <= i < len(profiles):
+            return profiles[i]
+    for p in profiles:
+        if p.get("entity_uuid") == aid or p.get("name") == aid or p.get("username") == aid:
+            return p
+    return None
+
+
+def _persona_answer(profiles: list, agent_id, question: str, llm) -> str:
+    """贴合人设生成采访回答（降级模拟 / 真实模拟环境不可用时的共用实现）。"""
+    profile = _find_profile(profiles, agent_id)
+    name = (profile or {}).get("name") or str(agent_id) or "Agent"
+    bits = []
+    if profile:
+        for key in ("bio", "persona", "occupation", "mbti"):
+            if profile.get(key):
+                bits.append(f"{key}: {profile[key]}")
+        if profile.get("interests"):
+            bits.append("interests: " + ", ".join(profile["interests"]))
+    persona = "\n".join(bits) or "（无额外人设信息）"
+    if not llm:
+        return f"作为 {name}，我认为「{question}」值得持续关注。"
+    prompt = (
+        f"你在扮演社交模拟世界中的人物：{name}。\n人设：\n{persona}\n"
+        f"请以第一人称、贴合人设地简洁作答（2-4 句）。\n问题：{question}"
+    )
+    try:
+        ans = llm(prompt)
+        return ans or f"作为 {name}，我认为「{question}」值得持续关注。"
+    except Exception:  # noqa: BLE001
+        return f"作为 {name}，我认为「{question}」值得持续关注。"
+
+
+def _handle_interviews(work_dir: str, llm, profiles: list | None = None) -> int:
+    """处理 IPC 目录中的采访请求（贴合人设生成应答并回写），返回处理数。"""
     ipc = os.path.join(work_dir, "ipc")
     if not os.path.isdir(ipc):
-        return
+        return 0
+    profiles = profiles if profiles is not None else _load_profiles(work_dir)
+    handled = 0
     for name in list(os.listdir(ipc)):
         if not (name.startswith("req_") and name.endswith(".json")):
             continue
@@ -88,19 +144,83 @@ def _handle_interviews(work_dir: str, agents_by_name: dict, llm) -> None:
                 req = json.load(f)
         except Exception:  # noqa: BLE001
             continue
-        question = req.get("question", "")
-        agent_id = req.get("agent_id")
-        if llm:
+        req_id = req.get("id")
+        if not req_id:
+            # 请求文件缺少 id（可能写入不完整），跳过并清理
             try:
-                answer = llm(f"你是社交模拟中的 Agent {agent_id}，请以第一人称回答：{question}")
-            except Exception:  # noqa: BLE001
-                answer = f"（Agent {agent_id} 暂时无法回答）"
-        else:
-            answer = f"作为 {agent_id}，我对「{question}」的看法是：这值得持续关注。"
-        with open(os.path.join(ipc, f"resp_{req['id']}.json"), "w", encoding="utf-8") as f:
-            json.dump({"id": req["id"], "answer": answer,
+                os.remove(req_path)
+            except OSError:
+                pass
+            continue
+        answer = _persona_answer(
+            profiles, req.get("agent_id"), req.get("question", ""), llm)
+        with open(os.path.join(ipc, f"resp_{req_id}.json"), "w", encoding="utf-8") as f:
+            json.dump({"id": req_id, "answer": answer,
                       "ts": time.time()}, f, ensure_ascii=False)
-        os.remove(req_path)
+        try:
+            os.remove(req_path)
+        except OSError:
+            pass
+        handled += 1
+    return handled
+
+
+# ---- 环境存活状态 / 关闭信号（ 的环境常驻） ----
+
+def _write_env_status(work_dir: str, status: str, platforms: list) -> None:
+    """写入模拟环境状态（alive/stopped），供主进程判断环境是否可接受采访。"""
+    try:
+        with open(os.path.join(work_dir, "env_status.json"), "w", encoding="utf-8") as f:
+            json.dump({
+                "status": status,
+                "twitter_available": "twitter" in platforms,
+                "reddit_available": "reddit" in platforms,
+                "ts": time.time(),
+            }, f, ensure_ascii=False)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _check_close(work_dir: str) -> bool:
+    """检查是否收到关闭环境信号（并消费信号文件）。"""
+    p = os.path.join(work_dir, "ipc", "close.json")
+    if os.path.exists(p):
+        try:
+            os.remove(p)
+        except OSError:
+            pass
+        return True
+    return False
+
+
+# 等待命令模式的最大空闲时长（秒）：无采访命令超过此时长自动关闭环境，避免孤儿进程
+WAIT_IDLE_TIMEOUT = 900
+
+
+def run_wait_loop(work_dir: str, platforms: list, llm, profiles: list | None = None) -> None:
+    """模拟回合完成后进入等待命令模式（环境常驻，）。
+
+    持续处理 IPC 采访请求（贴合人设作答），直到：收到 close 信号 或 长时间空闲。
+    """
+    profiles = profiles if profiles is not None else _load_profiles(work_dir)
+    _write_env_status(work_dir, "alive", platforms)
+    print("[env] 进入等待命令模式，环境保持运行（支持采访 / close_env）")
+    idle_deadline = time.time() + WAIT_IDLE_TIMEOUT
+    try:
+        while True:
+            if _check_close(work_dir):
+                print("[env] 收到关闭命令，退出等待循环")
+                break
+            handled = _handle_interviews(work_dir, llm, profiles)
+            if handled:
+                idle_deadline = time.time() + WAIT_IDLE_TIMEOUT
+            elif time.time() > idle_deadline:
+                print("[env] 空闲超时，自动关闭环境")
+                break
+            else:
+                time.sleep(0.5)
+    finally:
+        _write_env_status(work_dir, "stopped", platforms)
 
 
 def _poll_injections(work_dir: str) -> list:
@@ -137,6 +257,7 @@ def run_mock_simulation(platforms: list[str], sim_id: str, cfg: dict, work_dir: 
     """
     logger = ActionLogger(os.path.join(work_dir, "actions.jsonl"))
     llm = _maybe_llm()
+    profiles = _load_profiles(work_dir)
 
     time_cfg = cfg.get("time", {})
     max_rounds = int(time_cfg.get("max_rounds", 10))
@@ -148,7 +269,6 @@ def run_mock_simulation(platforms: list[str], sim_id: str, cfg: dict, work_dir: 
     for p in platforms:
         ids = agents_cfg.get(p) or [f"{p}_agent_{i}" for i in range(5)]
         agents[p] = [{"id": str(a), "name": str(a)} for a in ids]
-    agents_by_name = {a["name"]: a for p in platforms for a in agents[p]}
 
     # 话题池：由初始种子事件填充，可被「上帝视角」注入动态扩展
     topics = [e.get("content", "")
@@ -194,6 +314,9 @@ def run_mock_simulation(platforms: list[str], sim_id: str, cfg: dict, work_dir: 
                         content = "对此我有一些想法。"
                 logger.log(round=rnd, platform=platform, agent_id=agent["id"],
                            agent_name=agent["name"], action=action, content=content)
-        # 每轮处理一次采访请求
-        _handle_interviews(work_dir, agents_by_name, llm)
+        # 每轮处理一次采访请求（贴合人设作答）
+        _handle_interviews(work_dir, llm, profiles)
         time.sleep(0.2)
+
+    # 模拟回合完成后进入等待命令模式（环境常驻，支持实时采访，）
+    run_wait_loop(work_dir, platforms, llm, profiles)

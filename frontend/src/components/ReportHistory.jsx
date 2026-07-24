@@ -20,6 +20,7 @@ export default function ReportHistory() {
     const navigate = useNavigate()
     const [reports, setReports] = useState([])
     const [loading, setLoading] = useState(true)
+    const [err, setErr] = useState('')
 
     const load = async () => {
         setLoading(true)
@@ -39,11 +40,15 @@ export default function ReportHistory() {
 
     const handleDelete = async (id, e) => {
         e.stopPropagation()
+        // 删除前二次确认，避免误触丢失报告
+        if (!window.confirm(t('reports.confirmDelete', { defaultValue: '确定删除该报告？此操作不可撤销。' }))) return
+        setErr('')
         try {
             await deleteReport(id)
             load()
-        } catch (err) {
-            /* 忽略删除失败 */
+        } catch (e2) {
+            // 失败时给出反馈，而非静默吞没
+            setErr(t('reports.deleteFailed', { defaultValue: '删除失败，请重试。' }))
         }
     }
 
@@ -60,36 +65,39 @@ export default function ReportHistory() {
     }
 
     return (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {reports.map((r) => (
-                <div
-                    key={r.id}
-                    onClick={() => navigate(`/interaction/${r.id}`)}
-                    className="liquid-glass group cursor-pointer rounded-xl p-5 transition hover:-translate-y-1"
-                >
-                    <div className="mb-2 flex items-center justify-between">
-                        <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] font-semibold tracking-widest text-white">
-                            {t('process.predictionReport')}
-                        </span>
-                        <span className="text-xs text-gray-500">{r.status || ''}</span>
+        <>
+            {err && <p className="mb-3 text-sm text-red-400">{err}</p>}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {reports.map((r) => (
+                    <div
+                        key={r.id}
+                        onClick={() => navigate(`/interaction/${r.id}`)}
+                        className="liquid-glass group cursor-pointer rounded-xl p-5 transition hover:-translate-y-1"
+                    >
+                        <div className="mb-2 flex items-center justify-between">
+                            <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] font-semibold tracking-widest text-white">
+                                {t('process.predictionReport')}
+                            </span>
+                            <span className="text-xs text-gray-500">{r.status || ''}</span>
+                        </div>
+                        <h3 className="mb-3 line-clamp-2 text-base font-medium text-white">
+                            {reportTitle(r.content) || r.id}
+                        </h3>
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                            <span>
+                                {r.created_at ? new Date(r.created_at * 1000).toLocaleString() : ''}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={(e) => handleDelete(r.id, e)}
+                                className="text-gray-400 opacity-0 transition hover:text-white group-hover:opacity-100"
+                            >
+                                {t('history.delete')}
+                            </button>
+                        </div>
                     </div>
-                    <h3 className="mb-3 line-clamp-2 text-base font-medium text-white">
-                        {reportTitle(r.content) || r.id}
-                    </h3>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>
-                            {r.created_at ? new Date(r.created_at * 1000).toLocaleString() : ''}
-                        </span>
-                        <button
-                            type="button"
-                            onClick={(e) => handleDelete(r.id, e)}
-                            className="text-gray-400 opacity-0 transition hover:text-white group-hover:opacity-100"
-                        >
-                            {t('history.delete')}
-                        </button>
-                    </div>
-                </div>
-            ))}
-        </div>
+                ))}
+            </div>
+        </>
     )
 }

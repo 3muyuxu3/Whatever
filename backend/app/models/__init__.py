@@ -1,7 +1,7 @@
 """SimulMirror 数据模型（Pydantic）。"""
 
 from .project import Project, ProjectStore, project_store
-from .task import Task, TaskStatus, TaskStore, task_store
+from .task import Task, TaskRegistry, TaskStatus, TaskStore, task_store
 
 __all__ = [
     "Project",
@@ -10,5 +10,6 @@ __all__ = [
     "Task",
     "TaskStatus",
     "TaskStore",
+    "TaskRegistry",
     "task_store",
 ]

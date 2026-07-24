@@ -46,7 +46,9 @@ function derive(actions) {
         const aid = a.agent_id
         if (aid && aid !== 'seed' && aid !== 'godview') {
             agents.add(aid)
-            const name = a.agent_name || aid
+            // 兼容历史日志中 agent_name 为 "None"/"null"/空 的情况，回退到 agent_id
+            const raw = a.agent_name
+            const name = raw && raw !== 'None' && raw !== 'null' ? raw : aid
             byAgent.set(name, (byAgent.get(name) || 0) + 1)
         }
     }

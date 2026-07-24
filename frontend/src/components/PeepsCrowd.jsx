@@ -2,14 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 
 // public/image 下共有 openpeeps1.svg ... openpeeps105.svg
 const TOTAL = 105
-// 同时在场的人物数量（越多越密集，兼顾性能）
-const CROWD_SIZE = 64
+// 同时在场的人物数量（兼顾密集感与性能：适度下调以降低 GPU 合成层压力）
+const CROWD_SIZE = 40
 
 // SVG 原始尺寸（宽高比 ≈ 20:27）
 const SVG_W = 240
 const SVG_H = 324
 
-// 景深参数（对齐 MiroFish：深度 0.30~0.85，缩放 0.5~1.8，焦点 0.75，最大模糊 4px）
+// 景深参数（：深度 0.30~0.85，缩放 0.5~1.8，焦点 0.75，最大模糊 4px）
 const MIN_Z = 0.3
 const MAX_Z = 0.85
 const MIN_SCALE = 0.5
@@ -61,13 +61,22 @@ export default function PeepsCrowd() {
     const [progress, setProgress] = useState(0)
 
     useEffect(() => {
-        const onScroll = () => {
+        // 使用 requestAnimationFrame 节流：避免 scroll 每事件都触发 setState 导致频繁重渲染
+        let ticking = false
+        const compute = () => {
+            ticking = false
             const h = window.innerHeight || 800
             // 下滑约 0.4 屏即完全消失
             const p = Math.min(Math.max(window.scrollY / (h * 0.4), 0), 1)
             setProgress(p)
         }
-        onScroll()
+        const onScroll = () => {
+            if (!ticking) {
+                ticking = true
+                window.requestAnimationFrame(compute)
+            }
+        }
+        compute()
         window.addEventListener('scroll', onScroll, { passive: true })
         return () => window.removeEventListener('scroll', onScroll)
     }, [])

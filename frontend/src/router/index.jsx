@@ -1,16 +1,20 @@
+import { lazy } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
 import App from '../App'
-import Home from '../views/Home'
-import MainView from '../views/MainView'
-import SimulationView from '../views/SimulationView'
-import SimulationRunView from '../views/SimulationRunView'
-import ReportView from '../views/ReportView'
-import InteractionView from '../views/InteractionView'
 import NotFound from '../views/NotFound'
+
+// 路由级代码分割：各页面按需懒加载，减小首屏 bundle 体积。
+// App 作为布局壳、NotFound 作为错误/兜底页保持同步导入，确保始终可用。
+const Home = lazy(() => import('../views/Home'))
+const MainView = lazy(() => import('../views/MainView'))
+const SimulationView = lazy(() => import('../views/SimulationView'))
+const SimulationRunView = lazy(() => import('../views/SimulationRunView'))
+const ReportView = lazy(() => import('../views/ReportView'))
+const InteractionView = lazy(() => import('../views/InteractionView'))
 
 /**
  * 应用路由配置（createBrowserRouter）
- * 对应 AI.md 第六章的路由与页面阶段映射。
+ * 对应各阶段页面：首页 / 图谱构建 / 环境搭建 / 模拟运行 / 报告 / 深度互动。
  */
 const router = createBrowserRouter([
   {

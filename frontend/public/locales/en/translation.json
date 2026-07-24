@@ -42,7 +42,7 @@
         }
     },
     "workflow": {
-        "title": "Predict the Future in Four Steps",
+        "title": "Predict the Future in Five Steps",
         "step1": {
             "title": "Upload a Seed",
             "desc": "Upload news, policy drafts, financial signals or stories, then describe what you want to predict."
@@ -58,6 +58,10 @@
         "step4": {
             "title": "Get the Report",
             "desc": "Receive an interactive digital world and a detailed Markdown prediction report."
+        },
+        "step5": {
+            "title": "Deep Interaction",
+            "desc": "Inject variables from a god's-eye view and chat with the report or any agent to precisely deduce future trajectories."
         }
     },
     "start": {
@@ -76,7 +80,9 @@
         "subtitle": "Continue exploring the worlds you have built",
         "empty": "No projects yet — build your first digital world.",
         "open": "Open",
-        "delete": "Delete"
+        "delete": "Delete",
+        "confirmDelete": "Delete this project? This action cannot be undone.",
+        "deleteFailed": "Delete failed, please try again."
     },
     "footer": {
         "tagline": "Simulate Reality, Mirror the Future",
@@ -92,7 +98,9 @@
         "cancel": "Cancel",
         "confirm": "Confirm",
         "notFound": "Page not found",
-        "backHome": "Back to home"
+        "backHome": "Back to home",
+        "errorTitle": "Something went wrong",
+        "errorDesc": "This view failed to render. You can retry or go back home."
     },
     "steps": {
         "step1": "Graph Building",
@@ -149,6 +157,8 @@
         "reportGenerating": "Generating report",
         "chapters": "Chapters",
         "consoleOutput": "CONSOLE OUTPUT",
+        "systemDashboard": "SYSTEM DASHBOARD",
+        "environmentSetup": "ENVIRONMENT SETUP",
         "validMemory": "Active memory",
         "historyMemory": "History memory",
         "involvedEntities": "Entities",
@@ -195,6 +205,7 @@
         "noPersonas": "No personas yet",
         "stopSim": "Stop",
         "downloadReport": "Download report",
+        "regenerateReport": "Regenerate",
         "toolActivity": "Calling retrieval tools",
         "godView": "God View",
         "inject": "Inject",
@@ -238,7 +249,49 @@
     "reports": {
         "title": "Prediction Reports",
         "subtitle": "Revisit the prediction reports you have generated",
-        "empty": "No reports yet — run a simulation to generate one."
+        "empty": "No reports yet — run a simulation to generate one.",
+        "confirmDelete": "Delete this report? This action cannot be undone.",
+        "deleteFailed": "Delete failed, please try again."
+    },
+    "log": {
+        "ontologyGenerating": "Generating ontology …",
+        "ontologyDone": "Ontology generated: {{entities}} entity types, {{relations}} relation types",
+        "ontologyFailed": "Ontology generation failed",
+        "buildStarting": "Starting graph build …",
+        "buildTaskStarted": "Graph build task started … Task: {{task}}",
+        "graphRefreshed": "Graph refreshed, progress: {{progress}}%",
+        "buildFailed": "Build failed: {{error}}",
+        "buildStartFailed": "Failed to start build",
+        "preparingEnv": "Preparing simulation environment …",
+        "profilesGenerated": "Personas generated {{count}}",
+        "prepareFailed": "Environment preparation failed",
+        "resetProject": "Resetting project state …",
+        "resetFailed": "Reset failed",
+        "loadingEnvConfig": "Loading environment config …",
+        "personasGenerated": "Generated {{count}} agent personas",
+        "envReady": "Environment ready, you can start the simulation",
+        "savingAndStarting": "Saving config and starting simulation …",
+        "reportStarting": "Starting report generation …",
+        "reportTaskStarted": "Report task started … {{id}}",
+        "writingSection": "Writing: {{title}}",
+        "reportDone": "Report generation complete",
+        "reportFailed": "Report generation failed",
+        "reportStartFailed": "Failed to start report",
+        "simStarting": "Starting simulation … ({{mode}}, {{rounds}} rounds)",
+        "startFailed": "Start failed",
+        "stopping": "Stopping simulation …",
+        "stopFailed": "Stop failed",
+        "injectFailed": "Injection failed"
+    },
+    "timeline": {
+        "title": "Generation Timeline",
+        "reportStart": "Report generation started",
+        "planningComplete": "Outline planned ({{count}} sections)",
+        "sectionStart": "Writing section: {{title}}",
+        "sectionComplete": "Section done: {{title}}",
+        "toolCall": "Search {{tool}} ({{hits}} hits)",
+        "reportComplete": "Report complete",
+        "error": "Failed: {{error}}"
     },
     "language": "Language"
 }
