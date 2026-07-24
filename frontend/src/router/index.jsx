@@ -6,6 +6,10 @@ import NotFound from '../views/NotFound'
 // 路由级代码分割：各页面按需懒加载，减小首屏 bundle 体积。
 // App 作为布局壳、NotFound 作为错误/兜底页保持同步导入，确保始终可用。
 const Home = lazy(() => import('../views/Home'))
+const CapabilitiesView = lazy(() => import('../views/CapabilitiesView'))
+const WorkflowView = lazy(() => import('../views/WorkflowView'))
+const VisionView = lazy(() => import('../views/VisionView'))
+const DocsView = lazy(() => import('../views/DocsView'))
 const MainView = lazy(() => import('../views/MainView'))
 const SimulationView = lazy(() => import('../views/SimulationView'))
 const SimulationRunView = lazy(() => import('../views/SimulationRunView'))
@@ -23,6 +27,10 @@ const router = createBrowserRouter([
     errorElement: <NotFound />,
     children: [
       { index: true, element: <Home /> }, // 首页
+      { path: 'capabilities', element: <CapabilitiesView /> }, // 能力
+      { path: 'workflow', element: <WorkflowView /> }, // 流程
+      { path: 'vision', element: <VisionView /> }, // 理念
+      { path: 'docs', element: <DocsView /> }, // 文档
       { path: 'process/:projectId', element: <MainView /> }, // Step 1-2
       { path: 'simulation/:simulationId', element: <SimulationView /> }, // Step 2 详情
       { path: 'simulation/:simulationId/start', element: <SimulationRunView /> }, // Step 3

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -229,37 +229,20 @@ export default function Home() {
                                     SimulMirror
                                 </button>
 
-                                {/* 中：导航链接（移动端隐藏） */}
+                                {/* 中：导航链接 → 能力 / 流程 / 理念 / 文档 四个独立页面（移动端隐藏） */}
                                 <div className="hidden items-center gap-8 text-sm md:flex">
-                                    <button
-                                        type="button"
-                                        onClick={() => scrollTo('capabilities')}
-                                        className="transition hover:text-gray-300"
-                                    >
+                                    <Link to="/capabilities" className="transition hover:text-gray-300">
                                         {t('nav.capabilities')}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => scrollTo('workflow')}
-                                        className="transition hover:text-gray-300"
-                                    >
+                                    </Link>
+                                    <Link to="/workflow" className="transition hover:text-gray-300">
                                         {t('nav.workflow')}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => scrollTo('start')}
-                                        className="transition hover:text-gray-300"
-                                    >
+                                    </Link>
+                                    <Link to="/vision" className="transition hover:text-gray-300">
                                         {t('nav.vision')}
-                                    </button>
-                                    <a
-                                        href={GITHUB_URL}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="transition hover:text-gray-300"
-                                    >
+                                    </Link>
+                                    <Link to="/docs" className="transition hover:text-gray-300">
                                         {t('nav.docs')}
-                                    </a>
+                                    </Link>
                                 </div>
 
                                 {/* 右：语言切换 + GitHub 入口 + 主按钮 */}
@@ -303,27 +286,20 @@ export default function Home() {
                             {mobileOpen && (
                                 <div className="liquid-glass mt-2 flex flex-col gap-1 rounded-xl p-2 text-sm md:hidden">
                                     {[
-                                        ['capabilities', 'nav.capabilities'],
-                                        ['workflow', 'nav.workflow'],
-                                        ['start', 'nav.vision'],
-                                    ].map(([id, key]) => (
-                                        <button
+                                        ['/capabilities', 'nav.capabilities'],
+                                        ['/workflow', 'nav.workflow'],
+                                        ['/vision', 'nav.vision'],
+                                        ['/docs', 'nav.docs'],
+                                    ].map(([to, key]) => (
+                                        <Link
                                             key={key}
-                                            type="button"
-                                            onClick={() => { scrollTo(id); setMobileOpen(false) }}
+                                            to={to}
+                                            onClick={() => setMobileOpen(false)}
                                             className="rounded-lg px-4 py-2 text-left text-white transition hover:bg-white/10"
                                         >
                                             {t(key)}
-                                        </button>
+                                        </Link>
                                     ))}
-                                    <a
-                                        href={GITHUB_URL}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="rounded-lg px-4 py-2 text-white transition hover:bg-white/10"
-                                    >
-                                        {t('nav.docs')}
-                                    </a>
                                     <div className="px-2 py-1">
                                         <LanguageSwitcher />
                                     </div>

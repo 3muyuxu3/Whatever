@@ -293,5 +293,325 @@
         "reportComplete": "Report complete",
         "error": "Failed: {{error}}"
     },
+    "pages": {
+        "backHome": "Back to home",
+        "cta": "Start Predicting",
+        "learnMore": "Learn more",
+        "scrollHint": "Scroll to explore",
+        "capabilities": {
+            "kicker": "Core Capabilities",
+            "title": "A Five-Stage Prediction Engine",
+            "lead": "SimulMirror grows a single real-world seed into an interactive parallel digital world. Five interlocking stages — from knowledge extraction to crowd evolution, autonomous reporting and god's-eye intervention — form a complete loop for social simulation.",
+            "outro": "The five stages are not a one-off linear pipeline, but a closed loop you can intervene in and evolve again and again.",
+            "detail": {
+                "graph": "The system reads news, policy, financial signals or long-form text, uses an LLM to extract entities and relations, and builds a high-fidelity temporal knowledge graph in Zep Cloud. The graph captures not only static attributes but also event ordering and community summaries, forming retrievable long- and short-term memory.",
+                "env": "For every key entity in the graph, the system generates an agent persona with personality, history and behavioral logic, and infers the simulation platform, recommendation algorithm and initial seed events — no manual configuration required.",
+                "simulation": "Crowd-intelligence simulation runs in an isolated process across Twitter and Reddit in parallel; thousands of agents post, repost, comment and follow on their own, letting social relations and public opinion emerge and evolve round by round.",
+                "report": "A ReACT report agent decides its own retrieval strategy, calling four specialized tools to search, reflect and attribute across the graph and simulation state, ultimately producing a structured, downloadable Markdown prediction report.",
+                "interaction": "Prediction is never a one-shot conclusion. From a god's-eye view you can inject new events or variables into the running world, chat with the report or any individual in it, or even send out a survey to watch the future branch in real time."
+            },
+            "metrics": [
+                {
+                    "value": "5",
+                    "label": "Stages"
+                },
+                {
+                    "value": "2",
+                    "label": "Parallel platforms"
+                },
+                {
+                    "value": "4",
+                    "label": "Report tools"
+                },
+                {
+                    "value": "∞",
+                    "label": "Injectable variables"
+                }
+            ]
+        },
+        "workflow": {
+            "kicker": "Workflow",
+            "title": "Predict the Future in Five Steps",
+            "lead": "From uploading a document to owning a digital world you can talk to and intervene in, SimulMirror condenses a complex modeling process into five clear steps.",
+            "detail": {
+                "step1": "Upload a seed document — news, policy, a financial signal or a story — and describe in one sentence what you want to predict. The closer the seed is to reality, the more credible the mirror world.",
+                "step2": "The system designs the ontology, builds the graph and generates agents automatically, with no manual parameters. In minutes you have a runnable world.",
+                "step3": "Launch the crowd-intelligence simulation in an isolated process and monitor social behavior, topic communities and opinion dynamics round by round.",
+                "step4": "When the simulation ends, the ReACT report agent retrieves and reflects on its own, producing a detailed Markdown prediction report and an interactive digital world.",
+                "step5": "Inject new events or variables from a god's-eye view, or talk directly with the report or any individual, to precisely deduce futures under different choices."
+            }
+        },
+        "vision": {
+            "kicker": "Our Vision",
+            "title": "We don't predict the future,\nwe rehearse it.",
+            "lead": "The real world has too many variables for any single formula. Rather than hand you a cold number, we build a breathing mirror and let the world evolve — so the answer surfaces on its own.",
+            "showcase": {
+                "kicker": "A world that breathes",
+                "title": "The mirror world runs on its own",
+                "desc": "Drag to look around this little town — the tram comes and goes, signs flicker, the streets stay alive. It needs no frame-by-frame choreography; once the seed is set, the world simply runs. That is the digital mirror SimulMirror sets out to build.",
+                "hint": "Drag to look around"
+            },
+            "sections": [
+                {
+                    "title": "A mirror, not a model",
+                    "body": "Traditional prediction compresses the world into equations, fitting complex systems with a handful of variables. SimulMirror does the opposite: we build a high-fidelity mirror of reality that preserves the rich detail of entities, relations and context, so prediction rests on an interpretable structure rather than black-box parameters."
+                },
+                {
+                    "title": "Let the world evolve",
+                    "body": "The future is not computed, it is evolved. When thousands of agents with their own will interact freely in a digital world, macro-level opinion, trends and turning points emerge spontaneously — just as they do in real society — rather than being set in advance."
+                },
+                {
+                    "title": "Memory makes personality",
+                    "body": "Every agent carries long-term memory and a stable personality. It remembers the past, holds its ground, and can be persuaded to change. It is these remembering individuals that give the mirror world the stickiness and inertia of a real society."
+                },
+                {
+                    "title": "An interactive future",
+                    "body": "Prediction should not end at a report. At any moment you can inject new variables from above and watch the world re-branch, or talk with any individual to hear voices from every side. The future thus becomes explorable, questionable and rehearsable."
+                },
+                {
+                    "title": "Rooted in a real seed",
+                    "body": "Every prediction begins with a seed from reality — a piece of news, a policy, a signal. The seed sets the tone of the mirror world and keeps abstract prediction anchored to the real world."
+                }
+            ]
+        },
+        "docs": {
+            "title": "Docs",
+            "brand": "SimulMirror Docs",
+            "search": "Search",
+            "tocTitle": "On this page",
+            "intro": "Whether this is your first encounter with social simulation or you want to plug SimulMirror into your own workflow, you'll find what you need here.",
+            "nav": [
+                {
+                    "id": "overview",
+                    "label": "Overview"
+                },
+                {
+                    "id": "quickstart",
+                    "label": "Quick Start"
+                },
+                {
+                    "id": "concepts",
+                    "label": "Core Concepts"
+                },
+                {
+                    "id": "graph",
+                    "label": "Graph Building"
+                },
+                {
+                    "id": "simulation",
+                    "label": "Crowd Simulation"
+                },
+                {
+                    "id": "report",
+                    "label": "Report & Interaction"
+                },
+                {
+                    "id": "faq",
+                    "label": "FAQ"
+                }
+            ],
+            "sections": [
+                {
+                    "id": "overview",
+                    "title": "Overview",
+                    "blocks": [
+                        {
+                            "type": "p",
+                            "text": "SimulMirror is an agent-based simulation platform for social prediction. It turns a real-world seed into a runnable, observable and interactive parallel digital world."
+                        },
+                        {
+                            "type": "p",
+                            "text": "Unlike traditional prediction models, SimulMirror does not fit results with a formula; it lets trends and turning points emerge from the free interaction of large numbers of agents."
+                        },
+                        {
+                            "type": "table",
+                            "head": [
+                                "Stage",
+                                "Role",
+                                "Main output"
+                            ],
+                            "rows": [
+                                [
+                                    "Graph building",
+                                    "Extract entities and relations from the seed",
+                                    "Temporal knowledge graph + ontology"
+                                ],
+                                [
+                                    "Environment setup",
+                                    "Generate agent personas and simulation config",
+                                    "Agent personas + platform params"
+                                ],
+                                [
+                                    "Crowd simulation",
+                                    "Dual-platform social evolution",
+                                    "Round-by-round events and social behavior"
+                                ],
+                                [
+                                    "Report generation",
+                                    "ReACT autonomous retrieval and attribution",
+                                    "Markdown prediction report"
+                                ],
+                                [
+                                    "Deep interaction",
+                                    "God-view injection and dialogue",
+                                    "Interactive prediction results"
+                                ]
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "quickstart",
+                    "title": "Quick Start",
+                    "blocks": [
+                        {
+                            "type": "p",
+                            "text": "A full prediction takes just four steps, with no code and no manual parameter tuning."
+                        },
+                        {
+                            "type": "list",
+                            "ordered": true,
+                            "items": [
+                                "Upload a seed document (PDF / TXT / MD) and describe your prediction goal in one sentence.",
+                                "Wait for the system to generate the ontology, build the knowledge graph and create agent personas.",
+                                "Launch the crowd simulation and monitor social evolution in real time.",
+                                "Get the prediction report, then inject variables from a god's-eye view or chat with individuals to continue."
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "concepts",
+                    "title": "Core Concepts",
+                    "blocks": [
+                        {
+                            "type": "h3",
+                            "text": "Ontology"
+                        },
+                        {
+                            "type": "p",
+                            "text": "The ontology defines the type system of entities and relations in the mirror world. The system generates a fitting ontology from the seed document and prediction goal, forming the skeleton for graph building."
+                        },
+                        {
+                            "type": "h3",
+                            "text": "GraphRAG temporal graph"
+                        },
+                        {
+                            "type": "p",
+                            "text": "Documents are chunked and sent to Zep Cloud to extract entities and relations, forming time-ordered memory and community summaries that support real-time retrieval of long- and short-term memory."
+                        },
+                        {
+                            "type": "h3",
+                            "text": "Agent persona"
+                        },
+                        {
+                            "type": "p",
+                            "text": "Each key entity is given personality, memory and behavioral logic, becoming an individual that can act autonomously in the simulated world."
+                        },
+                        {
+                            "type": "h3",
+                            "text": "ReACT report agent"
+                        },
+                        {
+                            "type": "p",
+                            "text": "The report agent runs on the ReACT paradigm, deciding on its own when to retrieve and what to retrieve, and delivering traceable conclusions after multiple rounds of reflection."
+                        },
+                        {
+                            "type": "h3",
+                            "text": "God view"
+                        },
+                        {
+                            "type": "p",
+                            "text": "You can inject events or variables into the running world at any time; they take effect from the next round and let you compare futures under different interventions."
+                        }
+                    ]
+                },
+                {
+                    "id": "graph",
+                    "title": "Graph Building",
+                    "blocks": [
+                        {
+                            "type": "p",
+                            "text": "Graph building is the first step of prediction and the foundation of the mirror world's credibility. The system analyzes the document and goal, generates entity and relation types, then calls Zep to build the graph chunk by chunk."
+                        },
+                        {
+                            "type": "list",
+                            "items": [
+                                "Automatically extract entity nodes and relation edges, preserving fact sources.",
+                                "Capture event ordering to form temporal memory.",
+                                "Generate community summaries to support global and local retrieval."
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "simulation",
+                    "title": "Crowd Simulation",
+                    "blocks": [
+                        {
+                            "type": "p",
+                            "text": "The simulation runs in an isolated process and supports Twitter and Reddit in parallel. Each round, agents act autonomously based on persona and memory, and the social structure evolves accordingly."
+                        },
+                        {
+                            "type": "list",
+                            "items": [
+                                "Configurable rounds, platforms and recommendation algorithms.",
+                                "Editable initial seed events as the simulation starting point.",
+                                "Real-time output of event streams, activity curves and platform distribution."
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "report",
+                    "title": "Report & Interaction",
+                    "blocks": [
+                        {
+                            "type": "p",
+                            "text": "When the simulation ends, the report agent retrieves the graph and simulation state to produce a structured prediction report; both the report and the world remain interactive."
+                        },
+                        {
+                            "type": "list",
+                            "items": [
+                                "Four retrieval tools: QuickSearch, PanoramaSearch, InsightForge and InterviewSubAgent.",
+                                "Download the Markdown report, or regenerate it.",
+                                "Chat with the report, chat with individuals, or send a survey to the world."
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "faq",
+                    "title": "FAQ",
+                    "blocks": [
+                        {
+                            "type": "h3",
+                            "text": "Which seed document formats are supported?"
+                        },
+                        {
+                            "type": "p",
+                            "text": "PDF, TXT and Markdown are supported, up to 50MB per file, and you can upload multiple files at once."
+                        },
+                        {
+                            "type": "h3",
+                            "text": "Do I need to configure parameters manually?"
+                        },
+                        {
+                            "type": "p",
+                            "text": "No. The system generates the ontology, graph and agents automatically; if needed, you can fine-tune the simulation config during environment setup."
+                        },
+                        {
+                            "type": "h3",
+                            "text": "Are more simulation rounds always better?"
+                        },
+                        {
+                            "type": "p",
+                            "text": "More rounds mean richer evolution but higher LLM cost. Start with fewer rounds to validate quickly, then increase gradually."
+                        }
+                    ]
+                }
+            ]
+        }
+    },
     "language": "Language"
 }
