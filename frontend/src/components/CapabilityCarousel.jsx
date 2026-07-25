@@ -146,6 +146,30 @@ export default function CapabilityCarousel({ items }) {
 
     const go = useCallback((dir) => setActive((a) => (a + dir + n) % n), [n])
 
+    // 滚轮切换：在轮播区域内滚动即切换上一张 / 下一张（兼容触控板横向滑动）。
+    // React 的 onWheel 为被动监听无法 preventDefault，故用原生非被动监听；
+    // 累积达阈值才切换，并节流至与 0.7s 切换动画匹配的节奏，避免一滚到底连跳多张。
+    useEffect(() => {
+        const el = wrapRef.current
+        if (!el) return
+        let acc = 0
+        let lockUntil = 0
+        const onWheel = (e) => {
+            e.preventDefault()
+            const now = Date.now()
+            if (now < lockUntil) return
+            const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
+            acc += delta
+            if (Math.abs(acc) > 40) {
+                go(acc > 0 ? 1 : -1)
+                acc = 0
+                lockUntil = now + 600
+            }
+        }
+        el.addEventListener('wheel', onWheel, { passive: false })
+        return () => el.removeEventListener('wheel', onWheel)
+    }, [go])
+
     // 触摸滑动切换（仅限触摸 / 触控笔，避免与鼠标点击聚焦冲突）
     const onPointerDown = (e) => {
         if (e.pointerType === 'mouse') return

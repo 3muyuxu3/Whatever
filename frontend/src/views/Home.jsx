@@ -14,6 +14,8 @@ import PeepsCrowd from '../components/PeepsCrowd'
 import CapabilityCarousel from '../components/CapabilityCarousel'
 // 巨型品牌字位于首屏之外且依赖 three.js，故按需懒加载，避免阻塞首屏交互
 const GiantWordmark = lazy(() => import('../components/GiantWordmark'))
+// 彩蛋：连点三次底部巨字后出现的森林小屋（同样按需懒加载）
+const ForestHouseEgg = lazy(() => import('../components/ForestHouseEgg'))
 import { useUpload } from '../store/UploadContext'
 import { generateOntology } from '../api/graph'
 import { GITHUB_URL, ICON_GITHUB } from '../constants'
@@ -52,6 +54,20 @@ export default function Home() {
     // 平滑滚动到页面内的指定区块
     const scrollTo = (id) => {
         document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+    }
+
+    // 彩蛋触发：在底部 MUYU 巨字上快速连点三次，打开隐藏的森林小屋
+    const [eggOpen, setEggOpen] = useState(false)
+    const eggClicksRef = useRef({ count: 0, last: 0 })
+    const onWordmarkClick = () => {
+        const now = Date.now()
+        const s = eggClicksRef.current
+        s.count = now - s.last < 1200 ? s.count + 1 : 1
+        s.last = now
+        if (s.count >= 3) {
+            s.count = 0
+            setEggOpen(true)
+        }
     }
 
     // 追加文件（去重：同名同大小视为重复）
@@ -189,7 +205,7 @@ export default function Home() {
     return (
         <>
             {/* 底层固定巨字：置于视口最底层，被上层不透明内容遮挡，向下滚动到页面底部时逐渐显露 */}
-            <div className="fixed inset-x-0 bottom-0 z-0">
+            <div className="fixed inset-x-0 bottom-0 z-0" onClick={onWordmarkClick}>
                 {/* 懒加载时以同尺寸白色占位块占位，避免布局抖动 */}
                 <Suspense
                     fallback={<div className="w-full" style={{ height: 'clamp(120px, 20vw, 320px)', backgroundColor: '#ffffff' }} />}
@@ -508,6 +524,10 @@ export default function Home() {
                             <div className="text-lg font-semibold tracking-tight">SimulMirror</div>
                             <div className="text-sm text-gray-500">{t('footer.tagline')}</div>
                         </div>
+                        {/* 彩蛋提示：指向下方 MUYU 巨字的小秘密 */}
+                        <div className="rounded-full border border-white/10 px-4 py-1.5 text-xs text-gray-500">
+                            {t('pages.egg.teaser')}
+                        </div>
                         <div className="flex items-center gap-4">
                             <a
                                 href={GITHUB_URL}
@@ -533,6 +553,13 @@ export default function Home() {
 
             {/* 底部间隙：与巨字等高，向下滚动至此逐渐显露被遮挡的底层巨字 */}
             <div aria-hidden="true" className="w-full" style={{ height: 'clamp(120px, 20vw, 320px)' }} />
+
+            {/* 彩蛋：连点三次底部 MUYU 巨字后出现的森林小屋 */}
+            {eggOpen && (
+                <Suspense fallback={null}>
+                    <ForestHouseEgg onClose={() => setEggOpen(false)} />
+                </Suspense>
+            )}
         </>
     )
 }

@@ -298,6 +298,13 @@
         "cta": "Start Predicting",
         "learnMore": "Learn more",
         "scrollHint": "Scroll to explore",
+        "egg": {
+            "title": "You found a hidden corner",
+            "desc": "A forest house where the mirror world keeps its inspiration",
+            "hint": "Drag to orbit · Scroll to zoom · Esc to close",
+            "teaser": "A little secret: triple-click the MUYU letters below",
+            "close": "Close"
+        },
         "capabilities": {
             "kicker": "Core Capabilities",
             "title": "A Five-Stage Prediction Engine",
@@ -398,12 +405,20 @@
                     "label": "Graph Building"
                 },
                 {
+                    "id": "env",
+                    "label": "Environment Setup"
+                },
+                {
                     "id": "simulation",
                     "label": "Crowd Simulation"
                 },
                 {
                     "id": "report",
                     "label": "Report & Interaction"
+                },
+                {
+                    "id": "practices",
+                    "label": "Best Practices"
                 },
                 {
                     "id": "faq",
@@ -417,11 +432,15 @@
                     "blocks": [
                         {
                             "type": "p",
-                            "text": "SimulMirror is an agent-based simulation platform for social prediction. It turns a real-world seed into a runnable, observable and interactive parallel digital world."
+                            "text": "SimulMirror is an agent-based simulation platform for social prediction. It turns a piece of real-world seed information — a news story, a policy draft, a set of financial signals, even a novel — into a runnable, observable and interactive parallel digital world, and plays out what happens next inside it."
                         },
                         {
                             "type": "p",
-                            "text": "Unlike traditional prediction models, SimulMirror does not fit results with a formula; it lets trends and turning points emerge from the free interaction of large numbers of agents."
+                            "text": "Unlike traditional prediction models, SimulMirror does not fit outcomes with formulas. The course of a real society is shaped by countless individual judgments, emotions and interactions, which no single equation can capture. So we take another path: build a high-fidelity mirror of reality, let thousands of agents with independent personas and long-term memory interact freely, and let trends, disagreements and turning points emerge as they do in real society."
+                        },
+                        {
+                            "type": "p",
+                            "text": "The platform consists of five interlocking stages covering the full chain from understanding the seed to rehearsing the future. Each stage feeds the next, forming a closed loop you can intervene in and evolve again and again."
                         },
                         {
                             "type": "table",
@@ -444,7 +463,7 @@
                                 [
                                     "Crowd simulation",
                                     "Dual-platform social evolution",
-                                    "Round-by-round events and social behavior"
+                                    "Round-by-round events and behavior"
                                 ],
                                 [
                                     "Report generation",
@@ -457,6 +476,19 @@
                                     "Interactive prediction results"
                                 ]
                             ]
+                        },
+                        {
+                            "type": "h3",
+                            "text": "Typical use cases"
+                        },
+                        {
+                            "type": "list",
+                            "items": [
+                                "Opinion forecasting: predict how public opinion evolves after a news event or policy release.",
+                                "Decision sandbox: rehearse the chain reactions of different decisions in a virtual society at low cost.",
+                                "Narrative research: instantiate the world of a novel or script and watch characters act beyond the written plot.",
+                                "Social experiments: run large-scale, repeatable experiments that would be impractical in reality."
+                            ]
                         }
                     ]
                 },
@@ -466,17 +498,37 @@
                     "blocks": [
                         {
                             "type": "p",
-                            "text": "A full prediction takes just four steps, with no code and no manual parameter tuning."
+                            "text": "A full prediction takes just four steps, with no code and no manual tuning. For your first run, start with a news article of one to three thousand words to get familiar with the flow, then move on to more complex seeds."
+                        },
+                        {
+                            "type": "h3",
+                            "text": "Before you start"
+                        },
+                        {
+                            "type": "list",
+                            "items": [
+                                "Prepare a seed document: PDF, TXT and Markdown are supported, up to 50MB per file, and multiple complementary files can be uploaded together.",
+                                "Write down a one-sentence prediction goal, e.g. \"How will public opinion evolve after this policy is announced?\" The sharper the goal, the more focused the ontology and report.",
+                                "Make sure the backend is running with valid LLM and Zep Cloud credentials."
+                            ]
+                        },
+                        {
+                            "type": "h3",
+                            "text": "Four steps"
                         },
                         {
                             "type": "list",
                             "ordered": true,
                             "items": [
-                                "Upload a seed document (PDF / TXT / MD) and describe your prediction goal in one sentence.",
-                                "Wait for the system to generate the ontology, build the knowledge graph and create agent personas.",
-                                "Launch the crowd simulation and monitor social evolution in real time.",
-                                "Get the prediction report, then inject variables from a god's-eye view or chat with individuals to continue."
+                                "Upload the seed and enter your goal; the system generates the ontology and starts building the knowledge graph, which you can watch grow in real time.",
+                                "Enter environment setup to review the auto-generated agent personas; tweak rounds, platforms and seed events if needed, or keep the recommended defaults.",
+                                "Launch the crowd simulation and monitor event streams, topic communities, activity curves and platform distribution live.",
+                                "Generate the prediction report when the simulation ends; then inject variables from a god view, or talk with the report and any individual to explore alternative branches."
                             ]
+                        },
+                        {
+                            "type": "p",
+                            "text": "Every artifact is saved to your project history automatically. You can leave at any time and resume from the home page later; reports are archived separately for side-by-side comparison."
                         }
                     ]
                 },
@@ -486,11 +538,19 @@
                     "blocks": [
                         {
                             "type": "h3",
+                            "text": "Seed document"
+                        },
+                        {
+                            "type": "p",
+                            "text": "The seed is the starting point of a prediction and sets the boundary and tone of the mirror world. It can be news, policy, financial reports, interviews or fiction; the more complete and multi-perspective the material, the more credible the world. The system builds the world only from the seed and your goal, without importing unrelated assumptions."
+                        },
+                        {
+                            "type": "h3",
                             "text": "Ontology"
                         },
                         {
                             "type": "p",
-                            "text": "The ontology defines the type system of entities and relations in the mirror world. The system generates a fitting ontology from the seed document and prediction goal, forming the skeleton for graph building."
+                            "text": "The ontology defines the type system of entities and relations — the \"species catalog\" of the mirror world. It is generated automatically from the seed: a policy seed yields types like agencies, interest groups and policy instruments, while a finance seed yields companies, investors and market signals. It is the skeleton of graph building and constrains the granularity of extraction."
                         },
                         {
                             "type": "h3",
@@ -498,7 +558,7 @@
                         },
                         {
                             "type": "p",
-                            "text": "Documents are chunked and sent to Zep Cloud to extract entities and relations, forming time-ordered memory and community summaries that support real-time retrieval of long- and short-term memory."
+                            "text": "Documents are chunked and sent to Zep Cloud, where entities and relations are extracted into time-ordered fact memory and community summaries. The graph records not only who relates to whom, but also when each fact became valid or invalid, enabling both global retrieval and time-travel along the event line."
                         },
                         {
                             "type": "h3",
@@ -506,7 +566,15 @@
                         },
                         {
                             "type": "p",
-                            "text": "Each key entity is given personality, memory and behavioral logic, becoming an individual that can act autonomously in the simulated world."
+                            "text": "Each key entity receives an identity, personality traits, stance, speaking style and initial memory, becoming an individual that decides for itself. Personas are derived strictly from graph facts; during simulation, new experiences are written back into long-term memory and shape future behavior."
+                        },
+                        {
+                            "type": "h3",
+                            "text": "Crowd simulation"
+                        },
+                        {
+                            "type": "p",
+                            "text": "The simulation advances in rounds. Each round, agents read their recommendation feeds and, guided by persona and memory, decide to post, repost, comment, like or follow; these actions in turn shape what others see next round. Macro-level opinion dynamics emerge from these micro interactions."
                         },
                         {
                             "type": "h3",
@@ -514,7 +582,7 @@
                         },
                         {
                             "type": "p",
-                            "text": "The report agent runs on the ReACT paradigm, deciding on its own when to retrieve and what to retrieve, and delivering traceable conclusions after multiple rounds of reflection."
+                            "text": "The report agent runs on the ReACT (reason + act) paradigm: it decides on its own when to search, what to search, when to reflect and when to conclude. It cross-checks evidence across the graph and simulation records with four specialized tools, so every conclusion is traceable."
                         },
                         {
                             "type": "h3",
@@ -522,7 +590,7 @@
                         },
                         {
                             "type": "p",
-                            "text": "You can inject events or variables into the running world at any time; they take effect from the next round and let you compare futures under different interventions."
+                            "text": "At any moment you can inject new events or variables into the running world — a breaking story, a policy turn, a statement from a key figure. Injections take effect from the next round, letting you compare futures under different interventions. This is the heart of rehearsing the future."
                         }
                     ]
                 },
@@ -532,15 +600,100 @@
                     "blocks": [
                         {
                             "type": "p",
-                            "text": "Graph building is the first step of prediction and the foundation of the mirror world's credibility. The system analyzes the document and goal, generates entity and relation types, then calls Zep to build the graph chunk by chunk."
+                            "text": "Graph building is the first stage and the foundation of credibility. Its goal is to turn unstructured seed documents into a structured, time-aware, retrievable world model."
+                        },
+                        {
+                            "type": "h3",
+                            "text": "Ontology generation"
+                        },
+                        {
+                            "type": "p",
+                            "text": "The system reads the document alongside your goal, derives the entity and relation types this world needs, and produces descriptions and attributes for each type. You can inspect the generated ontology and analysis summary in the process page, and reset to regenerate if unsatisfied."
+                        },
+                        {
+                            "type": "h3",
+                            "text": "Chunking and extraction"
+                        },
+                        {
+                            "type": "p",
+                            "text": "Documents are split into semantically complete chunks and sent to Zep Cloud chunk by chunk for entity and relation extraction. Every extracted fact keeps its source; nodes and edges grow live in the graph panel so progress is always visible."
+                        },
+                        {
+                            "type": "h3",
+                            "text": "Temporal memory and community summaries"
+                        },
+                        {
+                            "type": "p",
+                            "text": "After extraction, two higher-order structures are distilled: temporal facts, which record when each statement became valid or invalid and support retrieval along the timeline; and community summaries, which cluster tightly-related nodes into topics with overviews, providing high-level entry points for global questions."
                         },
                         {
                             "type": "list",
                             "items": [
-                                "Automatically extract entity nodes and relation edges, preserving fact sources.",
-                                "Capture event ordering to form temporal memory.",
-                                "Generate community summaries to support global and local retrieval."
+                                "Entity nodes: people, organizations, places and concepts, with attributes and summaries.",
+                                "Relation edges: concrete relations between entities, with fact descriptions and sources.",
+                                "Temporal facts: statements with time bounds, expressing \"was true then, no longer holds\".",
+                                "Community summaries: topic-level aggregations serving global retrieval."
                             ]
+                        },
+                        {
+                            "type": "p",
+                            "text": "When building finishes, click any node or edge to inspect its attributes, related facts and activity — the most direct way to assess the quality of the world."
+                        }
+                    ]
+                },
+                {
+                    "id": "env",
+                    "title": "Environment Setup",
+                    "blocks": [
+                        {
+                            "type": "p",
+                            "text": "Environment setup turns the static knowledge graph into a living society: it generates an agent persona for every key entity and derives a ready-to-run simulation configuration."
+                        },
+                        {
+                            "type": "h3",
+                            "text": "Agent personas"
+                        },
+                        {
+                            "type": "p",
+                            "text": "Each persona includes identity, personality, stance, speaking style and initial memory, all generated from graph facts so behavior stays consistent with the seed world. Personas are listed in the environment page; preparing the environment again will not duplicate work — a ready world is reused idempotently."
+                        },
+                        {
+                            "type": "h3",
+                            "text": "Simulation configuration"
+                        },
+                        {
+                            "type": "table",
+                            "head": [
+                                "Option",
+                                "Description",
+                                "Default strategy"
+                            ],
+                            "rows": [
+                                [
+                                    "Rounds",
+                                    "Total rounds of evolution; more rounds mean richer dynamics and higher cost",
+                                    "Start small to validate, then increase"
+                                ],
+                                [
+                                    "Platforms",
+                                    "Twitter and Reddit, alone or in parallel",
+                                    "Recommended automatically from the seed"
+                                ],
+                                [
+                                    "Recommendation algorithm",
+                                    "How content is distributed to each agent every round",
+                                    "Default balances randomness and follow graph"
+                                ],
+                                [
+                                    "Seed events",
+                                    "Initial posts injected at start — the first push of the world",
+                                    "Distilled from the seed document; editable"
+                                ]
+                            ]
+                        },
+                        {
+                            "type": "p",
+                            "text": "All options can be adjusted before launch; the defaults give reasonable results when in doubt. Once launched, the configuration is fixed — stop the simulation and restart to change it."
                         }
                     ]
                 },
@@ -550,15 +703,40 @@
                     "blocks": [
                         {
                             "type": "p",
-                            "text": "The simulation runs in an isolated process and supports Twitter and Reddit in parallel. Each round, agents act autonomously based on persona and memory, and the social structure evolves accordingly."
+                            "text": "The simulation runs in an isolated process, fully decoupled from the UI: closing the page never interrupts it, and reopening resumes observation. Twitter and Reddit run in parallel, each maintaining its own feed and social structure."
+                        },
+                        {
+                            "type": "h3",
+                            "text": "How it runs"
+                        },
+                        {
+                            "type": "p",
+                            "text": "Each round, agents read their feeds and act autonomously based on persona and long-term memory: posting opinions, reposting to spread, commenting to argue, liking to take sides, or following like-minded individuals. Outcomes are written back to memory and shape later judgment; social structure and opinion climate evolve round by round."
+                        },
+                        {
+                            "type": "h3",
+                            "text": "Live monitoring"
                         },
                         {
                             "type": "list",
                             "items": [
-                                "Configurable rounds, platforms and recommendation algorithms.",
-                                "Editable initial seed events as the simulation starting point.",
-                                "Real-time output of event streams, activity curves and platform distribution."
+                                "Event stream: read every action and its content, reconstructing the scene of discussion.",
+                                "Activity curve: watch the rise, fall and turning points of engagement across rounds.",
+                                "Platform and action distribution: track how participation structure changes.",
+                                "Topic communities: see which groups gather around which issues."
                             ]
+                        },
+                        {
+                            "type": "h3",
+                            "text": "God-view injection"
+                        },
+                        {
+                            "type": "p",
+                            "text": "While the simulation runs, inject new events or variables at any time; they join the evolution from the next round. Keep everything else fixed and vary only the injection to compare futures cleanly."
+                        },
+                        {
+                            "type": "p",
+                            "text": "You can stop the simulation at any point; all produced data is preserved for report generation and deep interaction."
                         }
                     ]
                 },
@@ -568,15 +746,88 @@
                     "blocks": [
                         {
                             "type": "p",
-                            "text": "When the simulation ends, the report agent retrieves the graph and simulation state to produce a structured prediction report; both the report and the world remain interactive."
+                            "text": "When the simulation ends, the ReACT report agent takes over the full record: it retrieves the knowledge graph and simulation state, cross-validates evidence, and produces a structured prediction report. The report is not template filling — it is a genuine autonomous research process."
+                        },
+                        {
+                            "type": "h3",
+                            "text": "Generation flow"
+                        },
+                        {
+                            "type": "p",
+                            "text": "The agent first plans the outline, then writes chapter by chapter. Each chapter may trigger multiple rounds of retrieval and reflection; the report page shows the tool-call trace and a generation timeline, and every cited fact traces back to the graph or simulation records."
+                        },
+                        {
+                            "type": "h3",
+                            "text": "Four retrieval tools"
+                        },
+                        {
+                            "type": "table",
+                            "head": [
+                                "Tool",
+                                "Purpose"
+                            ],
+                            "rows": [
+                                [
+                                    "QuickSearch",
+                                    "Instant GraphRAG queries for concrete node attributes and discrete facts"
+                                ],
+                                [
+                                    "PanoramaSearch",
+                                    "Breadth traversal to reconstruct propagation paths and information-flow topology"
+                                ],
+                                [
+                                    "InsightForge",
+                                    "Aligns the real seed with simulation state for cross-time attribution analysis"
+                                ],
+                                [
+                                    "InterviewAgents",
+                                    "Parallel interviews with individuals to collect opinions, motives and mental states"
+                                ]
+                            ]
+                        },
+                        {
+                            "type": "h3",
+                            "text": "Deep interaction"
                         },
                         {
                             "type": "list",
                             "items": [
-                                "Four retrieval tools: QuickSearch, PanoramaSearch, InsightForge and InterviewSubAgent.",
-                                "Download the Markdown report, or regenerate it.",
-                                "Chat with the report, chat with individuals, or send a survey to the world."
+                                "Chat with the report: question its evidence, boundary conditions and alternative branches.",
+                                "Chat with individuals: hear first-person accounts from different stances.",
+                                "Surveys: broadcast questions to all or selected individuals and compare the answers."
                             ]
+                        },
+                        {
+                            "type": "p",
+                            "text": "Reports are saved as Markdown and can be downloaded or regenerated; all interactions are grounded in the actual simulation state rather than improvised answers."
+                        }
+                    ]
+                },
+                {
+                    "id": "practices",
+                    "title": "Best Practices",
+                    "blocks": [
+                        {
+                            "type": "p",
+                            "text": "The following lessons come from many real predictions and will help you reach credible, explainable results faster."
+                        },
+                        {
+                            "type": "list",
+                            "items": [
+                                "Seed quality first: complete, multi-perspective material beats long but single-viewpoint text.",
+                                "Iterate in small steps: validate the world with few rounds before committing to long runs.",
+                                "Change one variable at a time: keep everything else fixed when injecting, so conclusions attribute cleanly.",
+                                "Cross-validate: question the report agent or interview the individuals behind key conclusions.",
+                                "Keep the trail: project and report history is archived, making it easy to compare seeds and configs."
+                            ]
+                        },
+                        {
+                            "type": "h3",
+                            "text": "When to rebuild the graph"
+                        },
+                        {
+                            "type": "p",
+                            "text": "When your prediction goal fundamentally changes, or you add substantial material inconsistent with the original seed, reset and rebuild the graph instead of stacking on the old world — a clean world model is the premise of credible prediction."
                         }
                     ]
                 },
@@ -590,7 +841,7 @@
                         },
                         {
                             "type": "p",
-                            "text": "PDF, TXT and Markdown are supported, up to 50MB per file, and you can upload multiple files at once."
+                            "text": "PDF, TXT and Markdown, up to 50MB per file, with multiple files per upload. Materials are understood together, so pairing \"event coverage + background\" works well."
                         },
                         {
                             "type": "h3",
@@ -598,7 +849,7 @@
                         },
                         {
                             "type": "p",
-                            "text": "No. The system generates the ontology, graph and agents automatically; if needed, you can fine-tune the simulation config during environment setup."
+                            "text": "No. Ontology, graph and agents are generated automatically; if needed, fine-tune rounds, platforms and seed events during environment setup."
                         },
                         {
                             "type": "h3",
@@ -606,7 +857,31 @@
                         },
                         {
                             "type": "p",
-                            "text": "More rounds mean richer evolution but higher LLM cost. Start with fewer rounds to validate quickly, then increase gradually."
+                            "text": "More rounds mean richer evolution but higher LLM cost, and opinion usually settles into a stable pattern after sufficient evolution. Start small to validate, then scale up as needed."
+                        },
+                        {
+                            "type": "h3",
+                            "text": "How long does a prediction take?"
+                        },
+                        {
+                            "type": "p",
+                            "text": "It depends on seed length, entity count and rounds. In a typical mid-size run, graph building takes minutes, each simulation round tens of seconds, and report generation minutes. Building and simulation run in the background, so you can leave and come back."
+                        },
+                        {
+                            "type": "h3",
+                            "text": "Can I trust the results?"
+                        },
+                        {
+                            "type": "p",
+                            "text": "A prediction is not a deterministic prophecy but a plausible trajectory grounded in the seed and crowd interaction mechanics. Its value lies in revealing mechanisms, exposing risks and disagreements, and comparing interventions — use it with domain judgment, not instead of it."
+                        },
+                        {
+                            "type": "h3",
+                            "text": "Will I lose progress if I close the page?"
+                        },
+                        {
+                            "type": "p",
+                            "text": "No. Graph building and simulation run independently on the backend with state persisted continuously; reopen the project from history to pick up where you left off."
                         }
                     ]
                 }
