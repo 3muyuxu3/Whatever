@@ -11,6 +11,7 @@ SimulMirror 是一个新一代 AI 群体智能预测引擎。它从现实世界�
 ## 目录
 
 - [核心能力](#核心能力)
+- [端到端工作流程](#端到端工作流程)
 - [技术栈](#技术栈)
 - [工程结构](#工程结构)
 - [快速开始](#快速开始)
@@ -18,6 +19,7 @@ SimulMirror 是一个新一代 AI 群体智能预测引擎。它从现实世界�
 - [API 文档](#api-文档)
 - [前端路由](#前端路由)
 - [国际化](#国际化)
+- [优雅降级](#优雅降级)
 - [测试](#测试)
 - [Docker 部署](#docker-部署)
 - [许可证](#许可证)
@@ -28,11 +30,34 @@ SimulMirror 是一个新一代 AI 群体智能预测引擎。它从现实世界�
 
 SimulMirror 采用五阶段流水线，从一颗现实种子生长为可交互的数字世界：
 
-1. **知识图谱构建**：LLM 分析文档自动生成本体（正好 10 个实体类型），在 Zep Cloud 中构建高保真知识图谱。
-2. **环境搭建**：为每个实体生成具备人格、记忆与行为逻辑的 Agent 人设（Reddit JSON / Twitter CSV 两种格式），并**全自动**智能生成模拟配置。
-3. **群体模拟**：通过独立子进程运行 OASIS 模拟，支持 **Twitter / Reddit 双平台并行**，实时写入 JSONL 动作日志。
-4. **报告生成**：ReACT 报告 Agent 自主调用检索工具（InsightForge / PanoramaSearch / QuickSearch / InterviewAgents），生成详尽的 Markdown 预测报告。
-5. **深度互动**：与报告 Agent 连续对话、采访任意 Agent、批量问卷调查。
+1. **知识图谱构建**：上传 PDF / TXT / MD 种子文档（突发新闻、政策草案、金融信号等），LLM 分析文档内容与预测需求自动生成本体（正好 10 个实体类型 + 关系类型），随后文本分块、分批写入 **Zep Cloud** 构建高保真时序知识图谱，前端以 D3 力导向图实时可视化。
+2. **环境搭建**：从图谱中读取并过滤实体，为每个实体生成具备人格、长期记忆与行为逻辑的 Agent 人设（Reddit JSON / Twitter CSV 两种格式），并由 LLM **全自动**分步生成模拟配置（模拟周期、时间粒度、活跃度曲线、初始事件等），全程无需人工干预。
+3. **群体模拟**：通过独立子进程运行 **OASIS**（基于 CAMEL-AI）群体模拟，支持 **Twitter / Reddit 双平台并行**；每一步 Agent 动作（发帖、点赞、转发、评论、关注等）实时写入 JSONL 动作日志，前端增量拉取展示；运行期间还会将社交动态增量写回 Zep 图谱丰富时序记忆。
+4. **报告生成**：ReACT（推理-行动）报告 Agent 先规划 2-5 个章节，再自主调用四类检索工具（**InsightForge** 深度洞察 / **PanoramaSearch** 全景检索 / **QuickSearch** 快速检索 / **InterviewAgents** 现场采访），交叉验证后生成详尽的 Markdown 预测报告，支持下载。
+5. **深度互动**：报告生成后进入「上帝视角」互动阶段——与报告 Agent 连续多轮对话追问细节、采访模拟世界中的任意 Agent、对多个 Agent 批量发起问卷调查。
+
+---
+
+## 端到端工作流程
+
+```
+种子文档上传 ──► 本体生成(LLM) ──► Zep 图谱构建 ──► 实体读取与过滤
+                                                        │
+        ┌───────────────────────────────────────────────┘
+        ▼
+Agent 人设生成 ──► 模拟配置生成(LLM) ──► OASIS 子进程模拟(双平台)
+                                              │
+        ┌─────────────────────────────────────┘
+        ▼
+JSONL 动作日志 ──► ReACT 报告 Agent(4 类检索工具) ──► Markdown 报告
+                                                        │
+                                                        ▼
+                                     深度互动（对话 / 采访 / 问卷）
+```
+
+- 图谱构建、环境准备、报告生成均为**异步任务**：发起后返回 `task_id`，前端轮询 `/status` 端点获取进度与阶段描述。
+- 准备与报告生成具备**幂等性**：重复触发不会重复消耗 LLM / Zep 配额，已完成的产物直接复用。
+- 模拟运行中可通过文件系统 IPC **实时采访** Agent，无需等待模拟结束。
 
 ---
 
@@ -67,7 +92,7 @@ SimulMirror 采用五阶段流水线，从一颗现实种子生长为可交互�
 │       ├── router/         # createBrowserRouter 路由
 │       ├── store/          # 上传状态 Context
 │       └── views/          # Home / MainView / ...View 页面
-└── backend/                # Flask REST API
+└── backend/                # Flask REST API（详见 backend/README.md）
     ├── run.py              # 启动入口
     ├── pyproject.toml      # uv 项目配置（AGPL-3.0）
     ├── uv.lock             # 依赖锁定
@@ -77,8 +102,12 @@ SimulMirror 采用五阶段流水线，从一颗现实种子生长为可交互�
     │   ├── models/         # Project / Task Pydantic 模型
     │   └── utils/          # LLM 客户端、文件解析、重试、日志、i18n
     ├── scripts/            # 模拟执行脚本（独立子进程）
-    └── tests/              # pytest 单元测试
+    ├── tests/              # pytest 单元测试
+    ├── uploads/            # 用户上传的种子文档（按项目分目录）
+    └── data/               # 运行时数据（JSON 元数据 + 模拟工作目录）
 ```
+
+> 后端模块职责、异步任务模型、子进程架构与数据持久化的详细说明见 [backend/README.md](backend/README.md)。
 
 ---
 
@@ -118,7 +147,7 @@ pnpm run frontend   # 前端 http://localhost:3001
 pnpm run backend    # 后端 http://localhost:5001
 ```
 
-> 说明：未配置 `ZEP_API_KEY` 或未安装完整 AI 依赖时，应用仍可正常启动与浏览；模拟阶段会以内置的降级模拟循环产出真实的动作日志，保证端到端流程可运行。
+> 说明：未配置 `ZEP_API_KEY` 或未安装完整 AI 依赖时，应用仍可正常启动与浏览；模拟阶段会以内置的降级模拟循环产出真实的动作日志，保证端到端流程可运行（详见[优雅降级](#优雅降级)）。
 
 ---
 
@@ -129,8 +158,14 @@ pnpm run backend    # 后端 http://localhost:5001
 | `LLM_API_KEY` | 是 | LLM API 密钥（OpenAI 兼容格式） |
 | `LLM_BASE_URL` | 否 | LLM 服务地址，默认通义千问兼容端点 |
 | `LLM_MODEL_NAME` | 否 | 模型名，默认 `qwen-plus` |
-| `LLM_BOOST_*` | 否 | 加速模型（三项齐全才启用） |
-| `ZEP_API_KEY` | 否 | Zep Cloud 记忆图谱密钥 |
+| `LLM_BOOST_API_KEY` / `LLM_BOOST_BASE_URL` / `LLM_BOOST_MODEL_NAME` | 否 | 加速模型，用于轻量任务提速（**三项齐全才启用**） |
+| `ZEP_API_KEY` | 否 | Zep Cloud 记忆图谱密钥，缺失时图谱功能自动降级 |
+| `HOST` / `PORT` | 否 | 后端监听地址与端口，默认 `0.0.0.0:5001` |
+| `DEBUG` | 否 | Flask debug 模式，默认 `false` |
+| `CORS_ORIGINS` | 否 | 跨域白名单（逗号分隔），默认 `*`，生产环境建议收紧 |
+| `SIMULMIRROR_FILE_LOG` | 否 | 设为 `1` 时后端日志落盘到 `backend/log/simulmirror.log` |
+
+> 更多高级调优参数（Zep 限流间隔、图谱缓存、报告温度等）见 [backend/README.md](backend/README.md#环境变量)。
 
 ---
 
@@ -199,12 +234,28 @@ pnpm run backend    # 后端 http://localhost:5001
 
 ---
 
+## 优雅降级
+
+后端在依赖缺失时保证端到端流程可运行，不会崩溃或阻断：
+
+| 缺失项 | 降级行为 |
+| --- | --- |
+| `LLM_API_KEY` | 模拟走内置动作循环，报告输出兜底大纲 |
+| `ZEP_API_KEY` | 图谱构建/记忆检索跳过，报告检索降级为本地关键词检索 |
+| `zep-cloud` / `camel-oasis` 包缺失 | 相关模块惰性导入失败时静默降级，仅记录一次提示 |
+| Zep 429 限流 | 指数退避重试 + 最小请求间隔 + 读取缓存，多级缓解 |
+
+---
+
 ## 测试
 
 ```bash
 cd backend
-uv run --extra test pytest      # 运行后端单元测试
+uv run --extra test pytest                    # 运行后端全部单元测试
+uv run --extra test pytest tests/test_core.py -v   # 运行单个测试文件
 ```
+
+测试基于 **pytest + pytest-asyncio**（`asyncio_mode=auto`），覆盖核心流程与优化点回归。
 
 ---
 
