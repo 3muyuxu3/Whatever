@@ -1,0 +1,67 @@
+# ============ CI：后端测试 + 前端构建 ============
+# 仅手动触发：Actions 页面 → CI → Run workflow。
+# 后端测试在无 LLM/Zep 密钥时自动降级并通过，可直接在 CI 环境运行。
+
+name: CI
+
+on:
+  workflow_dispatch:
+
+# 同分支重复手动触发时取消旧流程
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: 后端测试
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 uv（含依赖缓存）
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: '3.12'
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: 安装依赖
+        run: uv sync --frozen --extra test
+
+      - name: 运行测试
+        run: uv run pytest -q
+
+  frontend:
+    name: 前端构建
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: 安装 Node.js（含 pnpm 缓存）
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 构建
+        run: pnpm run build
